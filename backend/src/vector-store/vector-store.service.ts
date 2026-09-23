@@ -58,6 +58,23 @@ export class VectorStoreService implements OnModuleInit {
         }
     }
 
+    async upsertPoints(points: VectorPoint[]): Promise<void> {
+        if (!points.length) return;
+
+        const batchSize = 100;
+        for (let i = 0; i < points.length; i += batchSize) {
+            const batch = points.slice(i, i + batchSize);
+            await this.client.upsert(this.collectionName, {
+                wait: true,
+                points: batch.map((p) => ({
+                    id: p.id,
+                    vector: p.vector,
+                    payload: p.payload,
+                })),
+            });
+        }
+    }
+
     async search(repoId: string, vector: number[], limit = 10) {
         const result = await this.client.query(this.collectionName, {
             query: vector,

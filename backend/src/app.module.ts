@@ -9,6 +9,7 @@ import { ReposModule } from './repos/repos.module';
 import { ChunkerModule } from './chunker/chunker.module';
 import { EmbeddingModule } from './embedding/embedding.module';
 import { VectorStoreModule } from './vector-store/vector-store.module';
+import { IngestionModule } from './ingestion/ingestion.module';
 import { QueryModule } from './query/query.module';
 
 @Module({
@@ -68,6 +69,7 @@ import { QueryModule } from './query/query.module';
     ChunkerModule,
     EmbeddingModule,
     VectorStoreModule,
+    IngestionModule,
     QueryModule,
   ],
 })

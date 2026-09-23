@@ -16,18 +16,11 @@ export class EmbeddingService {
     this.ai = new GoogleGenAI({ apiKey: apiKey || '' });
   }
 
-  /**
-   * Generates an embedding for a single text.
-   */
   async embedQuery(text: string): Promise<number[]> {
     const embeddings = await this.embedBatch([text]);
     return embeddings[0] || [];
   }
 
-  /**
-   * Generates embeddings for an array of texts.
-   * Batches into groups of up to 50 to stay well within Gemini API limits.
-   */
   async embedBatch(texts: string[], batchSize = 50): Promise<number[][]> {
     if (!texts.length) return [];
 
