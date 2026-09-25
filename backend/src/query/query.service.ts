@@ -23,7 +23,7 @@ export interface QueryResult {
 export class QueryService {
     private readonly logger = new Logger(QueryService.name);
     private readonly ai: GoogleGenAI;
-    private readonly llmModel = 'gemini-1.5-flash';
+    private readonly llmModel = 'gemini-3.5-flash-lite';
 
     constructor(
         private readonly configService: ConfigService,

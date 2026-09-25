@@ -2,11 +2,15 @@ import { Controller, Get, Post, Delete, Param, UseGuards, Request, Body } from '
 import { RepoService } from './repos.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
+import { IsNotEmpty, IsString } from 'class-validator';
+
 class CreateRepoDto {
+    @IsNotEmpty()
+    @IsString()
     url: string;
 }
 
-@Controller('api/repos')
+@Controller('repos')
 export class ReposController {
     constructor(private readonly reposService: RepoService) { }
 
