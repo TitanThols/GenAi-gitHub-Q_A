@@ -4,6 +4,7 @@ import { BullModule } from '@nestjs/bullmq';
 
 import { Repo } from './repo.entity';
 import { ReposService } from './repos.service';
+import { ReposController } from './repos.controller';
 import { VectorStoreModule } from '../vector-store/vector-store.module';
 
 @Module({
@@ -14,8 +15,8 @@ import { VectorStoreModule } from '../vector-store/vector-store.module';
     }),
     VectorStoreModule,
   ],
-  controllers: [],
+  controllers: [ReposController],
   providers: [ReposService],
   exports: [ReposService],
 })
-export class ReposModule {}
+export class ReposModule { }
