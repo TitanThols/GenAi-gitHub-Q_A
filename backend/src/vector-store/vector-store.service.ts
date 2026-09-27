@@ -1,6 +1,7 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { QdrantClient } from '@qdrant/js-client-rest';
+import { CodeChunk } from '../chunker/chunker.service';
 
 export interface VectorPoint {
     id: string;
@@ -32,6 +33,7 @@ export class VectorStoreService implements OnModuleInit {
             checkCompatibility: false,
         });
     }
+
     async onModuleInit() {
         await this.ensureCollection();
     }
@@ -40,7 +42,7 @@ export class VectorStoreService implements OnModuleInit {
         try {
             const exists = await this.client.collectionExists(this.collectionName);
             if (!exists.exists) {
-                this.logger.log(`Creating Qdrant collection '${this.collectionName}' with ${this.vectorDimension} dim...`,);
+                this.logger.log(`Creating Qdrant collection '${this.collectionName}' with ${this.vectorDimension} dim...`);
                 await this.client.createCollection(this.collectionName, {
                     vectors: {
                         size: this.vectorDimension,
@@ -48,7 +50,6 @@ export class VectorStoreService implements OnModuleInit {
                     }
                 });
                 this.logger.log(`Collection '${this.collectionName}' created successfully.`);
-
             }
         } catch (error) {
             this.logger.warn(
@@ -104,6 +105,52 @@ export class VectorStoreService implements OnModuleInit {
                 ],
             },
         });
+    }
+
+    async getFileChunks(repoId: string, filePath: string): Promise<CodeChunk[]> {
+        const result = await this.client.scroll(this.collectionName, {
+            filter: {
+                must: [
+                    { key: 'repoId', match: { value: repoId } },
+                    { key: 'filePath', match: { value: filePath } },
+                ],
+            },
+            limit: 500,
+            with_payload: true,
+            with_vector: false,
+        });
+
+        return result.points
+            .map((p) => ({
+                fileName: p.payload?.filePath as string,
+                type: p.payload?.type as CodeChunk['type'],
+                name: p.payload?.name as string,
+                content: p.payload?.content as string,
+                startLine: p.payload?.startLine as number,
+                endLine: p.payload?.endLine as number,
+                parentClass: p.payload?.parentClass as string | undefined,
+            }))
+            .sort((a, b) => a.startLine - b.startLine);
+    }
+
+    async listFiles(repoId: string): Promise<string[]> {
+        const result = await this.client.scroll(this.collectionName, {
+            filter: {
+                must: [
+                    { key: 'repoId', match: { value: repoId } },
+                ],
+            },
+            limit: 10_000,
+            with_payload: true,
+            with_vector: false,
+        });
+
+        const seen = new Set<string>();
+        for (const point of result.points) {
+            const fp = point.payload?.filePath as string;
+            if (fp) seen.add(fp);
+        }
+        return Array.from(seen).sort();
     }
 
 }

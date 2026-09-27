@@ -11,27 +11,16 @@ import { EmbeddingModule } from './embedding/embedding.module';
 import { VectorStoreModule } from './vector-store/vector-store.module';
 import { IngestionModule } from './ingestion/ingestion.module';
 import { QueryModule } from './query/query.module';
+import { AgentModule } from './agent/agent.module';
 
 @Module({
   imports: [
-    // ─── Global Config ──────────────────────────────────────────────────────
-    // isGlobal:true means every module can inject ConfigService without re-importing ConfigModule.
-    // Reads from .env at the project root.
+
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: '.env',
     }),
 
-    // ─── PostgreSQL (TypeORM) ───────────────────────────────────────────────
-    // Used for structured data: users, repos, query history.
-    // Vector data (embeddings) lives in Qdrant, not here.
-    //
-    // forRootAsync lets us read the DATABASE_URL from ConfigService rather than
-    // hardcoding it — required for 12-factor app compliance.
-    //
-    // synchronize:true auto-creates/alters tables to match entities. Safe in dev.
-    // NEVER enable in production — use TypeORM migrations instead. If you run
-    // synchronize:true against a production DB you can lose data.
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       useFactory: (config: ConfigService) => ({
@@ -44,10 +33,6 @@ import { QueryModule } from './query/query.module';
       inject: [ConfigService],
     }),
 
-    // ─── BullMQ (Redis-backed job queue) ────────────────────────────────────
-    // Repo indexing is a long-running task (minutes for large repos). BullMQ
-    // runs it in a worker process so HTTP requests return immediately.
-    // The client polls GET /api/repos/:id/status or subscribes to SSE for progress.
     BullModule.forRootAsync({
       imports: [ConfigModule],
       useFactory: (config: ConfigService) => ({
@@ -58,11 +43,6 @@ import { QueryModule } from './query/query.module';
       inject: [ConfigService],
     }),
 
-    // ─── Feature Modules ─────────────────────────────────────────────────────
-    // Each module owns one domain. Dependencies flow:
-    //   Auth      → Users
-    //   Repos     → Chunker, Embedding, VectorStore (orchestration)
-    //   Query     → Embedding, VectorStore (retrieval + reasoning)
     AuthModule,
     UsersModule,
     ReposModule,
@@ -71,6 +51,7 @@ import { QueryModule } from './query/query.module';
     VectorStoreModule,
     IngestionModule,
     QueryModule,
+    AgentModule
   ],
 })
-export class AppModule {}
+export class AppModule { }
