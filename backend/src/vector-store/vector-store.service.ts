@@ -152,5 +152,5 @@ export class VectorStoreService implements OnModuleInit {
         }
         return Array.from(seen).sort();
     }
-
 }
+ 
