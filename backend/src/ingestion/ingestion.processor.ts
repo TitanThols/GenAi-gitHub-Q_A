@@ -93,7 +93,7 @@ export class IngestionProcessor extends WorkerHost {
                 totalChunks: allChunks.length,
             });
 
-            const batchSize = 50;
+            const batchSize = 10;
             for (let i = 0; i < allChunks.length; i += batchSize) {
                 const batch = allChunks.slice(i, i + batchSize);
 
