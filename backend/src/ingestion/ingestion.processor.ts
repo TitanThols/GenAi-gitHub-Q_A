@@ -124,6 +124,10 @@ export class IngestionProcessor extends WorkerHost {
                 this.logger.log(
                     `Repo ${repoId}: Upserted chunks ${i + 1} to ${Math.min(i + batchSize, allChunks.length)} of ${allChunks.length}`,
                 );
+
+                if (i + batchSize < allChunks.length) {
+                    await new Promise((resolve) => setTimeout(resolve, 7000));
+                }
             }
 
             await this.updateStatus(repo, RepoStatus.INDEXED);

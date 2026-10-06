@@ -26,7 +26,7 @@ export interface AgentResult {
 }
 
 const MAX_HOPS = 4;
-const MODEL = 'gemini-3.5-flash-lite';
+const MODEL = 'gemini-1.5-pro';
 
 @Injectable()
 export class AgentService {

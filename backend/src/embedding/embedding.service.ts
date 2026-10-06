@@ -24,8 +24,6 @@ export class EmbeddingService {
   }
 
   private async embedSliceWithRetry(slice: string[], maxRetries = 5): Promise<number[][]> {
-    let delay = 35_000;
-
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       try {
         const response = await this.genAI.models.embedContent({
@@ -35,20 +33,45 @@ export class EmbeddingService {
         });
         return response.embeddings?.map((e) => e.values ?? []) ?? [];
       } catch (error: any) {
-        const isRateLimit = error?.status === 429 || error?.message?.includes('429') || error?.message?.includes('RESOURCE_EXHAUSTED');
+        const isRateLimit =
+          error?.status === 429 ||
+          error?.code === 429 ||
+          error?.message?.includes('429') ||
+          error?.message?.includes('RESOURCE_EXHAUSTED');
 
         if (isRateLimit && attempt < maxRetries) {
+          let waitTimeMs = 50_000;
+
+          const match = error?.message?.match(/retry in ([0-9.]+)s/i);
+          if (match && match[1]) {
+            const parsedSeconds = parseFloat(match[1]);
+            if (!isNaN(parsedSeconds) && parsedSeconds > 0) {
+              waitTimeMs = Math.ceil(parsedSeconds * 1000) + 2000;
+            }
+          } else if (Array.isArray(error?.details)) {
+            const retryInfo = error.details.find((d: any) => d?.retryDelay);
+            if (retryInfo?.retryDelay) {
+              const seconds = parseFloat(retryInfo.retryDelay.replace('s', ''));
+              if (!isNaN(seconds) && seconds > 0) {
+                waitTimeMs = Math.ceil(seconds * 1000) + 2000;
+              }
+            }
+          }
+
           this.logger.warn(
-            `Rate limit hit (attempt ${attempt}/${maxRetries}). Retrying in ${delay / 1000}s...`,
+            `Rate limit hit (attempt ${attempt}/${maxRetries}). Retrying in ${(waitTimeMs / 1000).toFixed(1)}s...`,
           );
-          await sleep(delay);
-          delay = Math.min(delay * 2, 120_000);
-          this.logger.error(`Failed to embed ${slice.length} texts after ${attempt} attempt(s)`);
-          throw error;
+          await sleep(waitTimeMs);
+          continue;
         }
+
+        this.logger.error(
+          `Failed to embed ${slice.length} texts after ${attempt} attempt(s): ${error?.message || error}`,
+        );
+        throw error;
       }
     }
-    return [];
+    throw new Error(`Failed to embed ${slice.length} texts: Max retries exceeded`);
   }
 
   async embedBatch(texts: string[], batchSize = 10): Promise<number[][]> {
