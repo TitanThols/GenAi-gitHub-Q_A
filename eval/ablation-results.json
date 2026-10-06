@@ -1,0 +1,663 @@
+{
+  "repository": {
+    "name": "sindresorhus/is",
+    "url": "https://github.com/sindresorhus/is",
+    "ref": "main",
+    "commit": "e9c026c611c1160eaad50da00be4e676b626018f"
+  },
+  "repoId": "7fa5604c-51d1-45ad-b6d3-15f852b0a580",
+  "sourceCommit": "e9c026c611c1160eaad50da00be4e676b626018f",
+  "runAt": "2026-10-06T20:53:02.176Z",
+  "embeddingModel": "text-embedding-3-small",
+  "astCollection": "codebase-embeddings-openai-v1",
+  "fixedCollection": "codebase-embeddings-fixed-500-50-v1",
+  "baseline": {
+    "chunkTokens": 500,
+    "overlapTokens": 50,
+    "tokenizer": "cl100k_base",
+    "files": 5,
+    "chunks": 94
+  },
+  "astChunks": 340,
+  "methodology": {
+    "recallCriterion": "Per-question hit: at least one ground-truth file/symbol chunk appears in top 5."
+  },
+  "summary": {
+    "questionCount": 20,
+    "astRecallAt5": 1,
+    "fixedRecallAt5": 0.8
+  },
+  "questions": [
+    {
+      "id": "IS-01",
+      "question": "How does isAll evaluate one predicate against values, and how does it combine an array of predicates?",
+      "astRecallAt5": true,
+      "fixedRecallAt5": true,
+      "astMatches": [
+        {
+          "rank": 1,
+          "filePath": "source/index.ts",
+          "startLine": 426,
+          "endLine": 440,
+          "name": "isAll"
+        },
+        {
+          "rank": 2,
+          "filePath": "source/index.ts",
+          "startLine": 1404,
+          "endLine": 1414,
+          "name": "assertAll"
+        }
+      ],
+      "fixedMatches": [
+        {
+          "rank": 1,
+          "filePath": "source/index.ts",
+          "startLine": 421,
+          "endLine": 451
+        },
+        {
+          "rank": 5,
+          "filePath": "source/index.ts",
+          "startLine": 379,
+          "endLine": 424
+        }
+      ]
+    },
+    {
+      "id": "IS-02",
+      "question": "How does isAny determine whether at least one predicate matches, including when predicates are provided as an array?",
+      "astRecallAt5": true,
+      "fixedRecallAt5": true,
+      "astMatches": [
+        {
+          "rank": 1,
+          "filePath": "source/index.ts",
+          "startLine": 452,
+          "endLine": 466,
+          "name": "isAny"
+        },
+        {
+          "rank": 3,
+          "filePath": "source/index.ts",
+          "startLine": 1416,
+          "endLine": 1426,
+          "name": "assertAny"
+        }
+      ],
+      "fixedMatches": [
+        {
+          "rank": 1,
+          "filePath": "source/index.ts",
+          "startLine": 421,
+          "endLine": 451
+        },
+        {
+          "rank": 3,
+          "filePath": "source/index.ts",
+          "startLine": 448,
+          "endLine": 505
+        }
+      ]
+    },
+    {
+      "id": "IS-03",
+      "question": "How does isOptional combine an optional undefined value with a supplied type guard?",
+      "astRecallAt5": true,
+      "fixedRecallAt5": true,
+      "astMatches": [
+        {
+          "rank": 1,
+          "filePath": "source/index.ts",
+          "startLine": 468,
+          "endLine": 470,
+          "name": "isOptional"
+        }
+      ],
+      "fixedMatches": [
+        {
+          "rank": 5,
+          "filePath": "source/index.ts",
+          "startLine": 448,
+          "endLine": 505
+        }
+      ]
+    },
+    {
+      "id": "IS-04",
+      "question": "How does isArray validate an array and optionally check its elements with an assertion?",
+      "astRecallAt5": true,
+      "fixedRecallAt5": true,
+      "astMatches": [
+        {
+          "rank": 1,
+          "filePath": "source/index.ts",
+          "startLine": 472,
+          "endLine": 483,
+          "name": "isArray"
+        },
+        {
+          "rank": 2,
+          "filePath": "source/index.ts",
+          "startLine": 1434,
+          "endLine": 1445,
+          "name": "assertArray"
+        }
+      ],
+      "fixedMatches": [
+        {
+          "rank": 1,
+          "filePath": "source/index.ts",
+          "startLine": 1431,
+          "endLine": 1496
+        },
+        {
+          "rank": 3,
+          "filePath": "source/index.ts",
+          "startLine": 1382,
+          "endLine": 1436
+        }
+      ]
+    },
+    {
+      "id": "IS-05",
+      "question": "What does isArrayBuffer recognize, and how does it distinguish an ArrayBuffer from other binary views?",
+      "astRecallAt5": true,
+      "fixedRecallAt5": false,
+      "astMatches": [
+        {
+          "rank": 1,
+          "filePath": "source/index.ts",
+          "startLine": 485,
+          "endLine": 487,
+          "name": "isArrayBuffer"
+        },
+        {
+          "rank": 2,
+          "filePath": "source/index.ts",
+          "startLine": 1447,
+          "endLine": 1451,
+          "name": "assertArrayBuffer"
+        }
+      ],
+      "fixedMatches": []
+    },
+    {
+      "id": "IS-06",
+      "question": "How does isArrayLike determine whether a value has the shape of an array-like object?",
+      "astRecallAt5": true,
+      "fixedRecallAt5": true,
+      "astMatches": [
+        {
+          "rank": 1,
+          "filePath": "source/index.ts",
+          "startLine": 489,
+          "endLine": 491,
+          "name": "isArrayLike"
+        },
+        {
+          "rank": 2,
+          "filePath": "source/index.ts",
+          "startLine": 1453,
+          "endLine": 1457,
+          "name": "assertArrayLike"
+        }
+      ],
+      "fixedMatches": [
+        {
+          "rank": 2,
+          "filePath": "source/index.ts",
+          "startLine": 267,
+          "endLine": 334
+        }
+      ]
+    },
+    {
+      "id": "IS-07",
+      "question": "How does isArrayOf build a reusable predicate that checks every member of an array?",
+      "astRecallAt5": true,
+      "fixedRecallAt5": true,
+      "astMatches": [
+        {
+          "rank": 1,
+          "filePath": "source/index.ts",
+          "startLine": 493,
+          "endLine": 495,
+          "name": "isArrayOf"
+        }
+      ],
+      "fixedMatches": [
+        {
+          "rank": 3,
+          "filePath": "source/index.ts",
+          "startLine": 448,
+          "endLine": 505
+        }
+      ]
+    },
+    {
+      "id": "IS-08",
+      "question": "How does isAsyncFunction identify an asynchronous function?",
+      "astRecallAt5": true,
+      "fixedRecallAt5": true,
+      "astMatches": [
+        {
+          "rank": 1,
+          "filePath": "source/index.ts",
+          "startLine": 497,
+          "endLine": 499,
+          "name": "isAsyncFunction"
+        },
+        {
+          "rank": 3,
+          "filePath": "source/index.ts",
+          "startLine": 1460,
+          "endLine": 1464,
+          "name": "assertAsyncFunction"
+        }
+      ],
+      "fixedMatches": [
+        {
+          "rank": 2,
+          "filePath": "source/index.ts",
+          "startLine": 448,
+          "endLine": 505
+        },
+        {
+          "rank": 3,
+          "filePath": "source/index.ts",
+          "startLine": 1431,
+          "endLine": 1496
+        }
+      ]
+    },
+    {
+      "id": "IS-09",
+      "question": "How does isAsyncGenerator distinguish an async generator object?",
+      "astRecallAt5": true,
+      "fixedRecallAt5": true,
+      "astMatches": [
+        {
+          "rank": 1,
+          "filePath": "source/index.ts",
+          "startLine": 501,
+          "endLine": 503,
+          "name": "isAsyncGenerator"
+        },
+        {
+          "rank": 3,
+          "filePath": "source/index.ts",
+          "startLine": 1466,
+          "endLine": 1470,
+          "name": "assertAsyncGenerator"
+        }
+      ],
+      "fixedMatches": [
+        {
+          "rank": 2,
+          "filePath": "source/index.ts",
+          "startLine": 448,
+          "endLine": 505
+        },
+        {
+          "rank": 5,
+          "filePath": "source/index.ts",
+          "startLine": 1431,
+          "endLine": 1496
+        }
+      ]
+    },
+    {
+      "id": "IS-10",
+      "question": "What protocol does isAsyncIterable check for when classifying a value?",
+      "astRecallAt5": true,
+      "fixedRecallAt5": true,
+      "astMatches": [
+        {
+          "rank": 1,
+          "filePath": "source/index.ts",
+          "startLine": 509,
+          "endLine": 511,
+          "name": "isAsyncIterable"
+        },
+        {
+          "rank": 2,
+          "filePath": "source/index.ts",
+          "startLine": 1478,
+          "endLine": 1482,
+          "name": "assertAsyncIterable"
+        },
+        {
+          "rank": 3,
+          "filePath": "source/index.ts",
+          "startLine": 501,
+          "endLine": 503,
+          "name": "isAsyncGenerator"
+        }
+      ],
+      "fixedMatches": [
+        {
+          "rank": 1,
+          "filePath": "source/index.ts",
+          "startLine": 501,
+          "endLine": 563
+        },
+        {
+          "rank": 3,
+          "filePath": "source/index.ts",
+          "startLine": 448,
+          "endLine": 505
+        }
+      ]
+    },
+    {
+      "id": "IS-11",
+      "question": "How does isBigint distinguish bigint values from numbers and boxed values?",
+      "astRecallAt5": true,
+      "fixedRecallAt5": true,
+      "astMatches": [
+        {
+          "rank": 1,
+          "filePath": "source/index.ts",
+          "startLine": 513,
+          "endLine": 515,
+          "name": "isBigint"
+        },
+        {
+          "rank": 2,
+          "filePath": "source/index.ts",
+          "startLine": 1484,
+          "endLine": 1488,
+          "name": "assertBigint"
+        }
+      ],
+      "fixedMatches": [
+        {
+          "rank": 1,
+          "filePath": "source/index.ts",
+          "startLine": 267,
+          "endLine": 334
+        }
+      ]
+    },
+    {
+      "id": "IS-12",
+      "question": "How does isBoolean treat primitive booleans versus Boolean wrapper objects?",
+      "astRecallAt5": true,
+      "fixedRecallAt5": true,
+      "astMatches": [
+        {
+          "rank": 2,
+          "filePath": "source/index.ts",
+          "startLine": 529,
+          "endLine": 531,
+          "name": "isBoolean"
+        },
+        {
+          "rank": 4,
+          "filePath": "source/index.ts",
+          "startLine": 1508,
+          "endLine": 1512,
+          "name": "assertBoolean"
+        }
+      ],
+      "fixedMatches": [
+        {
+          "rank": 1,
+          "filePath": "source/index.ts",
+          "startLine": 267,
+          "endLine": 334
+        }
+      ]
+    },
+    {
+      "id": "IS-13",
+      "question": "How does isClass determine whether a value is a class constructor?",
+      "astRecallAt5": true,
+      "fixedRecallAt5": true,
+      "astMatches": [
+        {
+          "rank": 1,
+          "filePath": "source/index.ts",
+          "startLine": 546,
+          "endLine": 548,
+          "name": "isClass"
+        },
+        {
+          "rank": 3,
+          "filePath": "source/index.ts",
+          "startLine": 1530,
+          "endLine": 1534,
+          "name": "assertClass"
+        }
+      ],
+      "fixedMatches": [
+        {
+          "rank": 2,
+          "filePath": "source/index.ts",
+          "startLine": 501,
+          "endLine": 563
+        },
+        {
+          "rank": 3,
+          "filePath": "source/index.ts",
+          "startLine": 267,
+          "endLine": 334
+        }
+      ]
+    },
+    {
+      "id": "IS-14",
+      "question": "How does isDate determine whether a value is a Date instance?",
+      "astRecallAt5": true,
+      "fixedRecallAt5": true,
+      "astMatches": [
+        {
+          "rank": 1,
+          "filePath": "source/index.ts",
+          "startLine": 554,
+          "endLine": 556,
+          "name": "isDate"
+        },
+        {
+          "rank": 2,
+          "filePath": "source/index.ts",
+          "startLine": 959,
+          "endLine": 961,
+          "name": "isValidDate"
+        },
+        {
+          "rank": 3,
+          "filePath": "source/index.ts",
+          "startLine": 1542,
+          "endLine": 1546,
+          "name": "assertDate"
+        }
+      ],
+      "fixedMatches": [
+        {
+          "rank": 2,
+          "filePath": "source/index.ts",
+          "startLine": 501,
+          "endLine": 563
+        },
+        {
+          "rank": 3,
+          "filePath": "source/index.ts",
+          "startLine": 917,
+          "endLine": 987
+        },
+        {
+          "rank": 4,
+          "filePath": "source/index.ts",
+          "startLine": 267,
+          "endLine": 334
+        }
+      ]
+    },
+    {
+      "id": "IS-15",
+      "question": "How does isEmptyArray handle an empty array and distinguish it from non-array values?",
+      "astRecallAt5": true,
+      "fixedRecallAt5": false,
+      "astMatches": [
+        {
+          "rank": 1,
+          "filePath": "source/index.ts",
+          "startLine": 566,
+          "endLine": 568,
+          "name": "isEmptyArray"
+        },
+        {
+          "rank": 2,
+          "filePath": "source/index.ts",
+          "startLine": 1554,
+          "endLine": 1558,
+          "name": "assertEmptyArray"
+        }
+      ],
+      "fixedMatches": []
+    },
+    {
+      "id": "IS-16",
+      "question": "How does isEmptyObject check for no own enumerable keys, and which value categories does it exclude?",
+      "astRecallAt5": true,
+      "fixedRecallAt5": true,
+      "astMatches": [
+        {
+          "rank": 1,
+          "filePath": "source/index.ts",
+          "startLine": 574,
+          "endLine": 576,
+          "name": "isEmptyObject"
+        },
+        {
+          "rank": 3,
+          "filePath": "source/index.ts",
+          "startLine": 1566,
+          "endLine": 1570,
+          "name": "assertEmptyObject"
+        }
+      ],
+      "fixedMatches": [
+        {
+          "rank": 1,
+          "filePath": "source/index.ts",
+          "startLine": 555,
+          "endLine": 610
+        },
+        {
+          "rank": 4,
+          "filePath": "source/index.ts",
+          "startLine": 267,
+          "endLine": 334
+        }
+      ]
+    },
+    {
+      "id": "IS-17",
+      "question": "What object-type check does isError use to recognize an Error value?",
+      "astRecallAt5": true,
+      "fixedRecallAt5": true,
+      "astMatches": [
+        {
+          "rank": 1,
+          "filePath": "source/index.ts",
+          "startLine": 608,
+          "endLine": 611,
+          "name": "isError"
+        },
+        {
+          "rank": 3,
+          "filePath": "source/index.ts",
+          "startLine": 1596,
+          "endLine": 1600,
+          "name": "assertError"
+        }
+      ],
+      "fixedMatches": [
+        {
+          "rank": 1,
+          "filePath": "source/index.ts",
+          "startLine": 555,
+          "endLine": 610
+        },
+        {
+          "rank": 2,
+          "filePath": "source/index.ts",
+          "startLine": 604,
+          "endLine": 668
+        }
+      ]
+    },
+    {
+      "id": "IS-18",
+      "question": "How does isEvenInteger handle numeric inputs and determine whether an integer is even?",
+      "astRecallAt5": true,
+      "fixedRecallAt5": false,
+      "astMatches": [
+        {
+          "rank": 1,
+          "filePath": "source/index.ts",
+          "startLine": 615,
+          "endLine": 617,
+          "name": "isEvenInteger"
+        },
+        {
+          "rank": 5,
+          "filePath": "source/index.ts",
+          "startLine": 1602,
+          "endLine": 1606,
+          "name": "assertEvenInteger"
+        }
+      ],
+      "fixedMatches": []
+    },
+    {
+      "id": "IS-19",
+      "question": "How does isFalsy define falsy values beyond a simple boolean type check?",
+      "astRecallAt5": true,
+      "fixedRecallAt5": true,
+      "astMatches": [
+        {
+          "rank": 1,
+          "filePath": "source/index.ts",
+          "startLine": 620,
+          "endLine": 622,
+          "name": "isFalsy"
+        },
+        {
+          "rank": 2,
+          "filePath": "source/index.ts",
+          "startLine": 1608,
+          "endLine": 1612,
+          "name": "assertFalsy"
+        }
+      ],
+      "fixedMatches": [
+        {
+          "rank": 4,
+          "filePath": "source/index.ts",
+          "startLine": 1604,
+          "endLine": 1671
+        }
+      ]
+    },
+    {
+      "id": "IS-20",
+      "question": "How does isFiniteNumber treat NaN and positive or negative infinity?",
+      "astRecallAt5": true,
+      "fixedRecallAt5": false,
+      "astMatches": [
+        {
+          "rank": 2,
+          "filePath": "source/index.ts",
+          "startLine": 625,
+          "endLine": 627,
+          "name": "isFiniteNumber"
+        }
+      ],
+      "fixedMatches": []
+    }
+  ]
+}
