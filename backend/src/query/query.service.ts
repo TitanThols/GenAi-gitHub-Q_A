@@ -1,4 +1,4 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { AgentService, AgentResult } from '../agent/agent.service';
 import { ReposService } from '../repos/repos.service';
 import { performance } from 'node:perf_hooks';
@@ -12,14 +12,15 @@ export class QueryService {
         private readonly reposService: ReposService,
     ) { }
 
-    async ask(repoId: string, question: string): Promise<AgentResult> {
+    async ask(
+        repoId: string,
+        question: string,
+        userId: string,
+    ): Promise<AgentResult> {
         const startedAt = performance.now();
         let succeeded = false;
         try {
-            const repo = await this.reposService.findOne(repoId);
-            if (!repo) {
-                throw new NotFoundException(`Repo with ID "${repoId}" not found`);
-            }
+            const repo = await this.reposService.findOne(repoId, userId);
 
             this.logger.log(`Agent query on repo ${repo.name}: "${question}"`);
 

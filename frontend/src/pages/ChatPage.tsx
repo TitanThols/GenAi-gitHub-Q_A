@@ -27,7 +27,7 @@ const ChatPage: React.FC = () => {
     }, [messages, isLoading]);
 
     useEffect(() => {
-        if (!currentRepo && repoId) {
+        if (repoId && currentRepo?.id !== repoId) {
             const found = repos.find((r) => r.id === repoId);
             if (found) {
                 dispatch(setCurrentRepo(found));
@@ -160,6 +160,9 @@ const ChatPage: React.FC = () => {
             <SourcePanel
                 source={selectedSource}
                 isOpen={isSourceOpen}
+                repoId={repoId ?? ''}
+                repositoryUrl={currentRepo?.url ?? ''}
+                branch={currentRepo?.defaultBranch ?? 'main'}
                 onClose={() => setIsSourceOpen(false)}
             />
         </div>

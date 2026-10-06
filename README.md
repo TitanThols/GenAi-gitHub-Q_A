@@ -2,6 +2,14 @@
 
 RepoQuery indexes source code with Tree-sitter AST chunks and OpenAI embeddings, stores vectors in Qdrant, and answers repository questions with a multi-hop LLM agent.
 
+## Accounts and indexed data
+
+Repository records and ownership are stored in PostgreSQL. Source-code chunks and their embeddings are stored in the Qdrant `codebase-embeddings-openai-v1` collection, keyed by an internal repository ID. BullMQ uses Redis to queue indexing work; Redis is not the long-term store for indexed code.
+
+Logging out removes the browser's saved authentication tokens and clears the current in-memory repository and chat state; it does not delete repository records or Qdrant points. Logging back in to the owning account makes its repositories available again. Repository listing, detail, deletion, and question requests are authenticated and scoped to the repository owner. Deleting a repository removes its Qdrant points before removing its PostgreSQL record; if vector deletion fails, the API reports the failure and retains the repository record.
+
+The frontend stores access and refresh tokens in browser local storage. When an API request receives an expired-access-token response, it refreshes the tokens and retries that request. If the refresh token is expired or rejected, the browser clears the local session and requires a new login.
+
 ## Measured results
 
 These are outputs from the committed scripts and data files linked below, not estimates. The evaluation and ablation use the pinned `sindresorhus/is` revision `e9c026c611c1160eaad50da00be4e676b626018f` and the same approved set of 20 questions.
@@ -35,7 +43,7 @@ The benchmark uses pinned source revisions, supports `.ts`, `.tsx`, `.js`, `.jsx
 
 ## Reproducing the measurements
 
-Use Node.js and npm versions supported by the backend project. Start the backend and make sure Qdrant is reachable. Configure the required credentials and settings in `backend/.env` using [backend/.env.example](./backend/.env.example); do not commit that file.
+Use Node.js and npm versions supported by the backend project. Start the backend and make sure Qdrant is reachable. Configure the required credentials and settings in `backend/.env` using [backend/.env.example](./backend/.env.example); replace all example placeholders and do not commit the actual `.env` file.
 
 Validate the committed question set without making API calls:
 

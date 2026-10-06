@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import type { RootState, AppDispatch } from '../store';
 import { setRepos } from '../store/repoSlice';
@@ -12,7 +12,7 @@ const DashboardPage: React.FC = () => {
     const dispatch = useDispatch<AppDispatch>();
     const [loading, setLoading] = useState(true);
 
-    const fetchRepos = async () => {
+    const fetchRepos = useCallback(async () => {
         try {
             const res = await api.get('/repos');
             dispatch(setRepos(res.data));
@@ -21,11 +21,11 @@ const DashboardPage: React.FC = () => {
         } finally {
             setLoading(false);
         }
-    };
+    }, [dispatch]);
 
     useEffect(() => {
-        fetchRepos();
-    }, []);
+        void fetchRepos();
+    }, [fetchRepos]);
 
     useEffect(() => {
         const hasActiveJobs = repos.some(
@@ -39,7 +39,7 @@ const DashboardPage: React.FC = () => {
         }, 3000);
 
         return () => clearInterval(interval);
-    }, [repos]);
+    }, [fetchRepos, repos]);
 
     const handleDelete = async (id: string) => {
         if (!window.confirm('Are you sure you want to delete this repository?')) return;

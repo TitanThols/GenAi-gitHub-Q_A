@@ -1,5 +1,6 @@
 import { createSlice } from "@reduxjs/toolkit";
 import type { PayloadAction } from "@reduxjs/toolkit";
+import { logout } from "./authSlice";
 
 export interface AgentStep {
     hop: number;
@@ -69,6 +70,9 @@ const querySlice = createSlice({
         closeSourceDrawer: (state) => {
             state.isSourceDrawerOpen = false;
         },
+    },
+    extraReducers: (builder) => {
+        builder.addCase(logout, () => initialState);
     },
 });
 

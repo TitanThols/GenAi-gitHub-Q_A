@@ -1,5 +1,6 @@
 import { createSlice } from "@reduxjs/toolkit";
 import type { PayloadAction } from "@reduxjs/toolkit";
+import { logout } from "./authSlice";
 
 export type RepoStatus = 'pending' | 'cloning' | 'chunking' | 'embedding' | 'indexed' | 'failed';
 
@@ -64,7 +65,10 @@ const repoSlice = createSlice({
                 }
             }
         },
-    }
+    },
+    extraReducers: (builder) => {
+        builder.addCase(logout, () => initialState);
+    },
 })
 
 export const { setRepos, setCurrentRepo, setLoading, setError, addRepo, updateRepoStatus } = repoSlice.actions;

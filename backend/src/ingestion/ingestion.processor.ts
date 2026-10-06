@@ -71,7 +71,12 @@ export class IngestionProcessor extends WorkerHost {
             const git = simpleGit();
             const cloneStartedAt = performance.now();
             await git.clone(url, tempDir, ['--depth=1', '--single-branch']);
-            sourceCommit = await git.cwd(tempDir).revparse(['HEAD']);
+            const clonedRepository = git.cwd(tempDir);
+            sourceCommit = await clonedRepository.revparse(['HEAD']);
+            repo.defaultBranch = await clonedRepository.revparse([
+                '--abbrev-ref',
+                'HEAD',
+            ]);
             this.logger.log(
                 JSON.stringify({
                     event: 'timing',

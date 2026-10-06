@@ -3,6 +3,7 @@ import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import DashboardPage from './pages/DashboardPage';
 import ChatPage from './pages/ChatPage';
+import RepoStatusPage from './pages/RepoStatusPage';
 import ProtectedRoute from './routes/ProtectedRoute';
 
 
@@ -15,6 +16,7 @@ function App() {
 
         <Route element={<ProtectedRoute />}>
           <Route path="/dashboard" element={<DashboardPage />} />
+          <Route path="/repos/:repoId" element={<RepoStatusPage />} />
           <Route path="/chat/:repoId" element={<ChatPage />} />
         </Route>
 

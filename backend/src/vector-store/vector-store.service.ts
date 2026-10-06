@@ -131,6 +131,7 @@ export class VectorStoreService implements OnModuleInit {
 
     async deleteRepoPoints(repoId: string): Promise<void> {
         await this.client.delete(this.collectionName, {
+            wait: true,
             filter: {
                 must: [
                     {

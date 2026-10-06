@@ -100,11 +100,13 @@ const RepoCard: React.FC<RepoCardProps> = ({ repo, onDelete }) => {
                     <div className="bg-[#0a0a0a] border border-white/5 rounded-lg p-3 mb-6">
                         <div className="flex justify-between items-center text-xs text-slate-400 mb-2">
                             <span className="capitalize">{repo.status}...</span>
-                            <span className="text-emerald-400 font-mono">In progress</span>
+                            <span className="text-emerald-400 font-mono">Live</span>
                         </div>
-                        <div className="w-full bg-white/10 rounded-full h-1.5 overflow-hidden">
-                            <div className="bg-emerald-400 h-1.5 rounded-full w-2/3 animate-pulse" />
-                        </div>
+                        {repo.totalFiles > 0 && (
+                            <p className="text-[11px] text-slate-500">
+                                {repo.totalFiles} source files · {formatCount(repo.totalChunks)} chunks prepared
+                            </p>
+                        )}
                     </div>
                 )}
 
@@ -149,8 +151,24 @@ const RepoCard: React.FC<RepoCardProps> = ({ repo, onDelete }) => {
                                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                             </svg>
-                            Processing
+                            <span>Processing</span>
+                            <button
+                                type="button"
+                                onClick={() => navigate(`/repos/${repo.id}`)}
+                                className="ml-2 text-emerald-300 hover:text-emerald-200 underline underline-offset-4"
+                            >
+                                View status
+                            </button>
                         </span>
+                    )}
+                    {isFailed && (
+                        <button
+                            type="button"
+                            onClick={() => navigate(`/repos/${repo.id}`)}
+                            className="text-xs text-slate-400 hover:text-white underline underline-offset-4"
+                        >
+                            View details
+                        </button>
                     )}
                 </div>
             </div>

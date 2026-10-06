@@ -6,6 +6,7 @@ import { InjectQueue } from '@nestjs/bullmq';
 
 import { Repo, RepoStatus } from './repo.entity';
 import { VectorStoreService } from '../vector-store/vector-store.service';
+import { CodeChunk } from '../chunker/chunker.service';
 
 function extractRepoName(url: string): string {
     try {
@@ -34,7 +35,7 @@ export class ReposService {
         private readonly vectorStoreService: VectorStoreService,
     ) { }
 
-    async create(url: string, userId?: string): Promise<Repo> {
+    async create(url: string, userId: string): Promise<Repo> {
         if (!url || !url.startsWith('https://github.com')) {
             throw new BadRequestException('Invalid GitHub repository URL. Must start with https://github.com');
         }
@@ -42,7 +43,7 @@ export class ReposService {
         const repoName = extractRepoName(url);
 
         const existingRepo = await this.repoRepository.findOne({
-            where: { name: repoName },
+            where: { name: repoName, userId },
         });
         if (existingRepo) {
             throw new BadRequestException(`Repository ${repoName} already exists.`);
@@ -52,7 +53,7 @@ export class ReposService {
             name: repoName,
             url,
             status: RepoStatus.PENDING,
-            userId: userId || null,
+            userId,
         });
 
         const savedRepo = await this.repoRepository.save(repo);
@@ -76,36 +77,43 @@ export class ReposService {
         return savedRepo;
     }
 
-    async findAll(userId?: string): Promise<Repo[]> {
-        if (userId) {
-            return this.repoRepository.find({
-                where: { userId },
-                order: { createdAt: 'DESC' },
-            });
-        }
+    async findAll(userId: string): Promise<Repo[]> {
         return this.repoRepository.find({
+            where: { userId },
             order: { createdAt: 'DESC' },
         });
     }
 
-    async findOne(id: string): Promise<Repo> {
-        const repo = await this.repoRepository.findOneBy({ id });
+    async findOne(id: string, userId: string): Promise<Repo> {
+        const repo = await this.repoRepository.findOneBy({ id, userId });
         if (!repo) {
             throw new NotFoundException(`Repository with ID '${id}' not found.`);
         }
         return repo;
     }
 
-    async remove(id: string): Promise<{ success: boolean }> {
-        const repo = await this.findOne(id);
+    async remove(id: string, userId: string): Promise<{ success: boolean }> {
+        const repo = await this.findOne(id, userId);
 
-        await this.vectorStoreService.deleteRepoPoints(id).catch((err) => {
-            this.logger.warn(`Failed to delete Qdrant points for repo ${id}`, err);
-        });
+        await this.vectorStoreService.deleteRepoPoints(id);
         await this.repoRepository.remove(repo);
         this.logger.log(`Deleted repo ${id} and purged vector points.`);
 
         return { success: true };
+    }
+
+    async getSourceChunk(
+        id: string,
+        userId: string,
+        filePath: string,
+        line: number,
+    ): Promise<CodeChunk | null> {
+        await this.findOne(id, userId);
+        const chunks = await this.vectorStoreService.getFileChunks(id, filePath);
+        return (
+            chunks.find((chunk) => chunk.startLine <= line && chunk.endLine >= line) ??
+            null
+        );
     }
 }
 
