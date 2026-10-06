@@ -1,0 +1,703 @@
+{
+  "repository": {
+    "name": "sindresorhus/is",
+    "url": "https://github.com/sindresorhus/is",
+    "ref": "main",
+    "commit": "e9c026c611c1160eaad50da00be4e676b626018f"
+  },
+  "indexedCommit": "e9c026c611c1160eaad50da00be4e676b626018f",
+  "runAt": "2026-10-06T20:45:27.548Z",
+  "repoId": "7fa5604c-51d1-45ad-b6d3-15f852b0a580",
+  "models": {
+    "embedding": "text-embedding-3-small",
+    "answer": "gpt-4.1-mini"
+  },
+  "qdrantCollection": "codebase-embeddings-openai-v1",
+  "methodology": {
+    "recallCriterion": "Per-question hit: at least one ground-truth file/symbol chunk appears in top-k.",
+    "percentileMethod": "Linear interpolation over sorted end-to-end latency samples."
+  },
+  "summary": {
+    "questionCount": 20,
+    "recallAt1": 0.9,
+    "recallAt5": 1,
+    "correctSourceCitationRate": 0.95,
+    "p50LatencyMs": 5675.77,
+    "p95LatencyMs": 7052.44
+  },
+  "questions": [
+    {
+      "id": "IS-01",
+      "question": "How does isAll evaluate one predicate against values, and how does it combine an array of predicates?",
+      "groundTruth": [
+        {
+          "filePath": "source/index.ts",
+          "symbols": [
+            "isAll"
+          ]
+        }
+      ],
+      "recallAt1": true,
+      "recallAt5": true,
+      "retrievedMatches": [
+        {
+          "rank": 1,
+          "filePath": "source/index.ts",
+          "startLine": 426,
+          "endLine": 440,
+          "name": "isAll"
+        },
+        {
+          "rank": 2,
+          "filePath": "source/index.ts",
+          "startLine": 1404,
+          "endLine": 1414,
+          "name": "assertAll"
+        }
+      ],
+      "endToEndLatencyMs": 6960.01,
+      "agentHops": 2,
+      "answerCitesCorrectSource": true,
+      "answer": "The function `isAll` evaluates predicates against values as follows:\n\n1. It accepts a `predicate` argument which can be a single predicate function or an array of predicate functions, followed by an arbitrary number of `values` to test.\n\n2. If the `predicate` is an array:\n   - It first validates that the array of predicates is not empty (unless no values are provided), and that each predicate is a valid function.\n   - Then it creates a combined predicate function called `combinedPredicate` that, when given a value, returns true if and only if every predicate in the array returns true for that value (using `Array.prototype.every`).\n   - If no values are provided as arguments, `isAll` returns the `combinedPredicate` function itself without evaluating.\n   - If values are provided, it calls `predicateOnArray` with `Array.prototype.every`, the combined predicate, and the values. This checks if every value passes the combined predicate.\n\n3. If the `predicate` is a single function:\n   - It directly calls `predicateOnArray` with `Array.prototype.every`, that predicate, and the values to check if every value passes the predicate.\n\nThe helper function `predicateOnArray` validates the predicate, verifies that values were provided, and then runs the appropriate array method (`every`) with the predicate on the values.\n\nSummary:\n- To combine an array of predicates, `isAll` creates a new predicate that returns true only if all predicates return true for the given value.\n- It then checks if every input value satisfies this combined predicate (or the single predicate if only one is provided).\n\nThe relevant code is in `source/index.ts` lines 426-440.\n\n```ts\nfunction isAll(predicate: Predicate | readonly Predicate[], ...values: unknown[]): boolean | Predicate {\n\tif (Array.isArray(predicate)) {\n\t\tconst predicateArray = predicate as readonly Predicate[];\n\t\tvalidatePredicateArray(predicateArray, values.length === 0);\n\n\t\tconst combinedPredicate = (value: unknown) => predicateArray.every(singlePredicate => singlePredicate(value));\n\t\tif (values.length === 0) {\n\t\t\treturn combinedPredicate;\n\t\t}\n\n\t\treturn predicateOnArray(Array.prototype.every, combinedPredicate, values);\n\t}\n\n\treturn predicateOnArray(Array.prototype.every, predicate as Predicate, values);\n}\n```\n\nThis design allows `isAll` to either return a combined predicate when no values are given or return a boolean after evaluating all provided values against the predicate(s)."
+    },
+    {
+      "id": "IS-02",
+      "question": "How does isAny determine whether at least one predicate matches, including when predicates are provided as an array?",
+      "groundTruth": [
+        {
+          "filePath": "source/index.ts",
+          "symbols": [
+            "isAny"
+          ]
+        }
+      ],
+      "recallAt1": true,
+      "recallAt5": true,
+      "retrievedMatches": [
+        {
+          "rank": 1,
+          "filePath": "source/index.ts",
+          "startLine": 452,
+          "endLine": 466,
+          "name": "isAny"
+        },
+        {
+          "rank": 3,
+          "filePath": "source/index.ts",
+          "startLine": 1416,
+          "endLine": 1426,
+          "name": "assertAny"
+        }
+      ],
+      "endToEndLatencyMs": 8808.53,
+      "agentHops": 2,
+      "answerCitesCorrectSource": true,
+      "answer": "The `isAny` function determines whether at least one predicate matches a set of values, including when predicates are provided as an array, as follows:\n\n- It accepts a `predicate` argument that can be either a single predicate function or a readonly array of predicate functions, and a rest parameter `...values` which are the values to test.\n\n- If `predicate` is an array:\n  - It first validates the array of predicates using `validatePredicateArray`.\n  - It creates a combined predicate function `combinedPredicate` that, for a single value, returns `true` if *any* predicate in the array returns `true` for that value. It does this using the `some` array method:\n    ```ts\n    const combinedPredicate = (value: unknown) => predicateArray.some(singlePredicate => singlePredicate(value));\n    ```\n  - If no values are provided (i.e., `values.length === 0`), it returns this combined predicate function itself.\n  - Otherwise, it calls `predicateOnArray` with the `Array.prototype.some` method, the combined predicate, and the list of values to check if *any* value passes the combined predicate:\n    ```ts\n    return predicateOnArray(Array.prototype.some, combinedPredicate, values);\n    ```\n\n- If `predicate` is a single predicate function:\n  - It directly calls `predicateOnArray` with the `Array.prototype.some` method, the single predicate, and the list of values.\n\n`predicateOnArray` applies the provided array method (`some` in this case) to the values array with the given predicate, effectively checking if at least one value returns `true` for the predicate.\n\nIn summary, `isAny`:\n- Combines an array of predicates to a single predicate that returns true if any predicate matches.\n- Uses `Array.prototype.some` on the values to check if at least one value passes the combined (or single) predicate.\n- Returns a boolean indicating whether at least one value satisfies any predicate, or the combined predicate function if no values are given.\n\nThis is implemented in the file `source/index.ts` lines 452-466.\n\n```ts\nfunction isAny(predicate: Predicate | readonly Predicate[], ...values: unknown[]): boolean | Predicate {\n\tif (Array.isArray(predicate)) {\n\t\tconst predicateArray = predicate as readonly Predicate[];\n\t\tvalidatePredicateArray(predicateArray, values.length === 0);\n\n\t\tconst combinedPredicate = (value: unknown) => predicateArray.some(singlePredicate => singlePredicate(value));\n\t\tif (values.length === 0) {\n\t\t\treturn combinedPredicate;\n\t\t}\n\n\t\treturn predicateOnArray(Array.prototype.some, combinedPredicate, values);\n\t}\n\n\treturn predicateOnArray(Array.prototype.some, predicate as Predicate, values);\n}\n```\n\nAdditionally, `validatePredicateArray` ensures that the predicate array is valid and non-empty unless explicitly allowed.\n\nThe core logic for applying the predicate to the values using the array method is handled by `predicateOnArray`, which validates the predicate, checks that values are provided, and then calls the method (some) on the values array with the predicate.\n\nThis logic means `isAny` returns true if at least one predicate returns true for at least one of the provided values.\n\n### Reference\n- `source/index.ts` lines 452-466 — `isAny`\n- `source/index.ts` lines 393-408 — `validatePredicateArray`\n- `source/index.ts` lines 989-997 — `predicateOnArray`"
+    },
+    {
+      "id": "IS-03",
+      "question": "How does isOptional combine an optional undefined value with a supplied type guard?",
+      "groundTruth": [
+        {
+          "filePath": "source/index.ts",
+          "symbols": [
+            "isOptional"
+          ]
+        }
+      ],
+      "recallAt1": true,
+      "recallAt5": true,
+      "retrievedMatches": [
+        {
+          "rank": 1,
+          "filePath": "source/index.ts",
+          "startLine": 468,
+          "endLine": 470,
+          "name": "isOptional"
+        }
+      ],
+      "endToEndLatencyMs": 6276.35,
+      "agentHops": 2,
+      "answerCitesCorrectSource": true,
+      "answer": "The function `isOptional` is defined at source/index.ts lines 468-470:\n\n```ts\nfunction isOptional<T>(value: unknown, predicate: (value: unknown) => value is T): value is T | undefined {\n\treturn isUndefined(value) || predicate(value);\n}\n```\n\nHow `isOptional` works:\n- It takes two parameters:\n  1. `value`: an unknown value to check.\n  2. `predicate`: a type guard function which takes a value and returns a type predicate `value is T`.\n- It returns a type predicate that `value` is of type `T` or `undefined`.\n- The implementation returns `true` if either `value` is `undefined` (determined by `isUndefined(value)`) or `predicate(value)` returns `true`.\n- Thus, it combines the check for optional (`undefined`) with the supplied type guard predicate by allowing the value to be either undefined or satisfying the predicate.\n\nSo effectively, `isOptional` extends a supplied type guard predicate to also accept `undefined` values, marking the type as `T | undefined`.\n\nThis behavior is concise and straightforward.\n\nThis can be seen at source/index.ts lines 468-470.\n\n# Final Answer\n\nThe function `isOptional` combines an optional undefined value with a supplied type guard predicate by returning `true` if the value is `undefined` or if it satisfies the provided type guard. It is implemented as:\n\n```ts\nfunction isOptional<T>(value: unknown, predicate: (value: unknown) => value is T): value is T | undefined {\n\treturn isUndefined(value) || predicate(value);\n}\n```\n\nThis means the value is considered valid if it is either `undefined` (optional) or it passes the type guard predicate, effectively producing a type guard for `T | undefined`.\n\n(Implementation at source/index.ts lines 468-470)"
+    },
+    {
+      "id": "IS-04",
+      "question": "How does isArray validate an array and optionally check its elements with an assertion?",
+      "groundTruth": [
+        {
+          "filePath": "source/index.ts",
+          "symbols": [
+            "isArray"
+          ]
+        }
+      ],
+      "recallAt1": true,
+      "recallAt5": true,
+      "retrievedMatches": [
+        {
+          "rank": 1,
+          "filePath": "source/index.ts",
+          "startLine": 472,
+          "endLine": 483,
+          "name": "isArray"
+        },
+        {
+          "rank": 2,
+          "filePath": "source/index.ts",
+          "startLine": 1434,
+          "endLine": 1445,
+          "name": "assertArray"
+        }
+      ],
+      "endToEndLatencyMs": 5965.23,
+      "agentHops": 2,
+      "answerCitesCorrectSource": true,
+      "answer": "The function `isArray` validates whether a given value is an array and optionally checks its elements with a provided assertion function.\n\nHere is how `isArray` works (from file `source/index.ts` lines 472-483):\n\n```ts\nfunction isArray<T = unknown>(value: unknown, assertion?: (value: T) => value is T): value is T[] {\n\tif (!Array.isArray(value)) {\n\t\treturn false;\n\t}\n\n\tif (!isFunction(assertion)) {\n\t\treturn true;\n\t}\n\n\t// Check each element of the array with the assertion function\n\treturn value.every(element => assertion(element));\n}\n```\n\nExplanation:\n- It first uses `Array.isArray(value)` to check if the value is an array.\n- If not an array, it immediately returns `false`.\n- If no assertion function is provided or the provided `assertion` is not a function, it returns `true` since the value is an array already.\n- If an assertion function is provided, it checks every element of the array using `value.every(element => assertion(element))`.\n- It returns `true` only if the value is an array and every element satisfies the given assertion function.\n\nIn summary, `isArray`:\n- Validates the value is an actual array.\n- Optionally validates the elements in the array using the provided assertion predicate function.\n\nThis mechanism allows both a simple array check and a refined check with an element type guard. \n\nReference: `source/index.ts` lines 472-483."
+    },
+    {
+      "id": "IS-05",
+      "question": "What does isArrayBuffer recognize, and how does it distinguish an ArrayBuffer from other binary views?",
+      "groundTruth": [
+        {
+          "filePath": "source/index.ts",
+          "symbols": [
+            "isArrayBuffer"
+          ]
+        }
+      ],
+      "recallAt1": true,
+      "recallAt5": true,
+      "retrievedMatches": [
+        {
+          "rank": 1,
+          "filePath": "source/index.ts",
+          "startLine": 485,
+          "endLine": 487,
+          "name": "isArrayBuffer"
+        },
+        {
+          "rank": 2,
+          "filePath": "source/index.ts",
+          "startLine": 1447,
+          "endLine": 1451,
+          "name": "assertArrayBuffer"
+        }
+      ],
+      "endToEndLatencyMs": 6640.97,
+      "agentHops": 2,
+      "answerCitesCorrectSource": false,
+      "answer": "The function `isArrayBuffer` recognizes a value as an `ArrayBuffer` type by using an internal helper function `getObjectType`. It returns true if and only if `getObjectType(value)` returns the string `\"ArrayBuffer\"`.\n\nThe key implementation is:\n\n```typescript\nfunction isArrayBuffer(value: unknown): value is ArrayBuffer {\n\treturn getObjectType(value) === 'ArrayBuffer';\n}\n```\n\nThis means the distinction between an `ArrayBuffer` and other binary views (e.g., `DataView`, various `TypedArray`s like `Uint8Array`, etc.) is made by the `getObjectType` function returning the exact string tag `\"ArrayBuffer\"` when called on the value.\n\nThe `getObjectType` function, as implemented, uses `Object.prototype.toString.call(value).slice(8, -1)` to extract the internal `Class` string tag of the object. For an `ArrayBuffer`, this string tag is `\"ArrayBuffer\"`. Other binary views will have different string tags like `\"DataView\"` or specific typed array names like `\"Uint8Array\"`.\n\nIn summary:\n- `isArrayBuffer` recognizes an `ArrayBuffer` by checking if the internal `toString` tag of the value is `\"ArrayBuffer\"`.\n- This method distinguishes an `ArrayBuffer` from other binary views because each binary view has a distinct internal class tag returned by `getObjectType`.\n\nThis can be seen around lines 485-487 (for `isArrayBuffer`) and lines 181-193 (for `getObjectType`) in `source/index.ts`.\n\n# Final Answer\n\nThe `isArrayBuffer` function recognizes a value as an `ArrayBuffer` by checking whether the object's internal type tag (as returned by `getObjectType`) is exactly `\"ArrayBuffer\"`. This distinguishes an `ArrayBuffer` from other binary views because `getObjectType` obtains the object's internal `toString` tag, which differs among binary views such as `ArrayBuffer`, `DataView`, or typed arrays. Specifically, `isArrayBuffer` returns true only when `getObjectType(value) === 'ArrayBuffer'`.\n\nThis is implemented in `source/index.ts` at lines 181-193 for `getObjectType` and lines 485-487 for `isArrayBuffer`."
+    },
+    {
+      "id": "IS-06",
+      "question": "How does isArrayLike determine whether a value has the shape of an array-like object?",
+      "groundTruth": [
+        {
+          "filePath": "source/index.ts",
+          "symbols": [
+            "isArrayLike"
+          ]
+        }
+      ],
+      "recallAt1": true,
+      "recallAt5": true,
+      "retrievedMatches": [
+        {
+          "rank": 1,
+          "filePath": "source/index.ts",
+          "startLine": 489,
+          "endLine": 491,
+          "name": "isArrayLike"
+        },
+        {
+          "rank": 2,
+          "filePath": "source/index.ts",
+          "startLine": 1453,
+          "endLine": 1457,
+          "name": "assertArrayLike"
+        }
+      ],
+      "endToEndLatencyMs": 5331.35,
+      "agentHops": 2,
+      "answerCitesCorrectSource": true,
+      "answer": "The function `isArrayLike` determines whether a value has the shape of an array-like object by checking the following conditions:\n\n1. The value is not null or undefined (`!isNullOrUndefined(value)`).\n2. The value is not a function (`!isFunction(value)`).\n3. The value has a valid \"length\" property that is a non-negative safe integer (`isValidLength((value as ArrayLike<T>).length)`).\n\nThe function signature is:\n```ts\nfunction isArrayLike<T = unknown>(value: unknown): value is ArrayLike<T> {\n\treturn !isNullOrUndefined(value) && !isFunction(value) && isValidLength((value as ArrayLike<T>).length);\n}\n```\n\nThis means the function infers \"array-like\" as an object with a numeric length property that is a valid length, not null/undefined, and not callable (not a function).\n\nThe relevant code is located in the file `source/index.ts` at lines 489-491. The helper functions `isNullOrUndefined`, `isFunction`, and `isValidLength` are also used:\n\n- `isNullOrUndefined` checks for null or undefined (lines 787-789).\n- `isFunction` checks if the value's type is 'function' (lines 644-646).\n- `isValidLength` checks if the value is a safe integer >= 0 (lines 964-966).\n\nAll these helper functionalities are in the same file.\n\nHence, `isArrayLike` returns true for any value that has a non-negative integer `length` property, is not null/undefined, and is not a function.\n\nThis is the complete explanation based on the implementation in `source/index.ts` lines 489-491."
+    },
+    {
+      "id": "IS-07",
+      "question": "How does isArrayOf build a reusable predicate that checks every member of an array?",
+      "groundTruth": [
+        {
+          "filePath": "source/index.ts",
+          "symbols": [
+            "isArrayOf"
+          ]
+        }
+      ],
+      "recallAt1": true,
+      "recallAt5": true,
+      "retrievedMatches": [
+        {
+          "rank": 1,
+          "filePath": "source/index.ts",
+          "startLine": 493,
+          "endLine": 495,
+          "name": "isArrayOf"
+        }
+      ],
+      "endToEndLatencyMs": 6288.84,
+      "agentHops": 2,
+      "answerCitesCorrectSource": true,
+      "answer": "The function `isArrayOf` is defined in the file `source/index.ts` at lines 493-495:\n\n```ts\nfunction isArrayOf<T>(predicate: (value: unknown) => value is T): (value: unknown) => value is T[] {\n\treturn (value: unknown): value is T[] => isArray(value) && value.every(element => predicate(element));\n}\n```\n\nExplanation:\n- `isArrayOf` takes a type predicate function `predicate` as an argument. This predicate checks if a single value is of type `T`.\n- `isArrayOf` returns a new predicate function that checks if a given value is an array where every element satisfies the original `predicate`.\n- The returned predicate first checks if the value is an array using `isArray(value)`.\n- Then it uses `value.every(element => predicate(element))` to verify every element in the array satisfies the predicate.\n\nIn short, `isArrayOf` builds a reusable predicate that takes any predicate for a single element and creates a new predicate for arrays whose every element satisfies that predicate.\n\nThis code is at:\n- File: `source/index.ts`\n- Lines: 493-495\n\nThe function uses the helper `isArray` (defined lines 472-483) which:\n- Returns false if not an array\n- If an optional assertion function is provided, it checks that every element in the array satisfies that assertion.\n\nThus, `isArrayOf` composes the type guard for a single element into a type guard for an array of those elements.\n\n# Summary\n`isArrayOf` takes a single-element predicate and returns a predicate that checks whether a value is an array and that every element in that array satisfies the original predicate by combining `isArray` and `Array.prototype.every`.\n\nExample usage:\n```ts\nconst isNumberArray = isArrayOf(isNumber);\nisNumberArray([1, 2, 3]); // true\nisNumberArray([1, \"a\", 3]); // false\n```\n\nThis shows it builds a reusable predicate that checks every member of an array.\n\nLet me know if you want me to explain related helpers or assert functions for arrays."
+    },
+    {
+      "id": "IS-08",
+      "question": "How does isAsyncFunction identify an asynchronous function?",
+      "groundTruth": [
+        {
+          "filePath": "source/index.ts",
+          "symbols": [
+            "isAsyncFunction"
+          ]
+        }
+      ],
+      "recallAt1": true,
+      "recallAt5": true,
+      "retrievedMatches": [
+        {
+          "rank": 1,
+          "filePath": "source/index.ts",
+          "startLine": 497,
+          "endLine": 499,
+          "name": "isAsyncFunction"
+        },
+        {
+          "rank": 3,
+          "filePath": "source/index.ts",
+          "startLine": 1460,
+          "endLine": 1464,
+          "name": "assertAsyncFunction"
+        }
+      ],
+      "endToEndLatencyMs": 5678.42,
+      "agentHops": 2,
+      "answerCitesCorrectSource": true,
+      "answer": "The function `isAsyncFunction` identifies an asynchronous function by checking the object's internal type tag. It does this by calling the helper function `getObjectType` on the input value and then checking if the result is the string `'AsyncFunction'`.\n\nHere is the relevant implementation from `source/index.ts` lines 497-499:\n\n```typescript\nfunction isAsyncFunction<T = unknown>(value: unknown): value is ((...arguments_: any[]) => Promise<T>) {\n\treturn getObjectType(value) === 'AsyncFunction';\n}\n```\n\nThe `getObjectType` function determines the type tag of the object value using `Object.prototype.toString.call(value)` and extracting the internal tag name (the part inside the square brackets). Specifically, it returns the type string such as `'AsyncFunction'`, `'Function'`, `'AsyncGeneratorFunction'`, etc.\n\nFrom `source/index.ts` lines 181-193, the `getObjectType` function is:\n\n```typescript\nconst getObjectType = (value: unknown): ObjectTypeName | undefined => {\n\tconst objectTypeName = Object.prototype.toString.call(value).slice(8, -1);\n\n\tif (/HTML\\w+Element/v.test(objectTypeName) && isHtmlElement(value)) {\n\t\treturn 'HTMLElement';\n\t}\n\n\tif (isObjectTypeName(objectTypeName)) {\n\t\treturn objectTypeName;\n\t}\n\n\treturn undefined;\n};\n```\n\nThus, the identification of an async function is done through the object's internal class/type string being equal to `'AsyncFunction'`.\n\n# Summary\n\n- `isAsyncFunction` calls `getObjectType(value)` to get the internal object type string.\n- If the type string equals `'AsyncFunction'`, the function returns `true`.\n- Otherwise, it returns `false`.\n\nThis means `isAsyncFunction` relies on the built-in `Object.prototype.toString` type tag mechanism to detect async functions. \n\nFile: `source/index.ts`  \nLines: 181-193 (getObjectType), 497-499 (isAsyncFunction)"
+    },
+    {
+      "id": "IS-09",
+      "question": "How does isAsyncGenerator distinguish an async generator object?",
+      "groundTruth": [
+        {
+          "filePath": "source/index.ts",
+          "symbols": [
+            "isAsyncGenerator"
+          ]
+        }
+      ],
+      "recallAt1": true,
+      "recallAt5": true,
+      "retrievedMatches": [
+        {
+          "rank": 1,
+          "filePath": "source/index.ts",
+          "startLine": 501,
+          "endLine": 503,
+          "name": "isAsyncGenerator"
+        },
+        {
+          "rank": 3,
+          "filePath": "source/index.ts",
+          "startLine": 1466,
+          "endLine": 1470,
+          "name": "assertAsyncGenerator"
+        }
+      ],
+      "endToEndLatencyMs": 5673.13,
+      "agentHops": 2,
+      "answerCitesCorrectSource": true,
+      "answer": "The function `isAsyncGenerator` determines if a value is an async generator object by checking the following conditions:\n\n1. The value must be an async iterable, which means it has a `[Symbol.asyncIterator]` method that is a function. This is checked by the helper function `isAsyncIterable`.\n2. The value must have a `.next` method that is a function.\n3. The value must have a `.throw` method that is a function.\n\nSpecifically, the implementation is:\n\n```ts\nfunction isAsyncGenerator(value: unknown): value is AsyncGenerator {\n\treturn isAsyncIterable(value)\n\t    && isFunction((value as AsyncGenerator).next)\n\t    && isFunction((value as AsyncGenerator).throw);\n}\n```\n\n- The check `isAsyncIterable(value)` ensures the object is async iterable.\n- The checks for `.next` and `.throw` methods ensure the object has the async generator interface methods.\n\nThis means `isAsyncGenerator` distinguishes an async generator by verifying it is asynchronously iterable and has the key async generator methods `next` and `throw`.\n\nThis is located in the file `source/index.ts` at lines 501-503.  \nThe helper `isAsyncIterable` used here is defined at lines 509-511 and checks for a function at `[Symbol.asyncIterator]`.\n\nThe `isFunction` helper checks if a value is a function and is defined at lines 644-646.\n\nSummary:\n- `isAsyncGenerator` returns true if the value is async iterable and has `.next` and `.throw` functions, indicating it is an async generator object.\n\n### Location in the code:\n- `isAsyncGenerator` function: `source/index.ts` lines 501-503\n- `isAsyncIterable` helper function: `source/index.ts` lines 509-511\n- `isFunction` helper function: `source/index.ts` lines 644-646"
+    },
+    {
+      "id": "IS-10",
+      "question": "What protocol does isAsyncIterable check for when classifying a value?",
+      "groundTruth": [
+        {
+          "filePath": "source/index.ts",
+          "symbols": [
+            "isAsyncIterable"
+          ]
+        }
+      ],
+      "recallAt1": true,
+      "recallAt5": true,
+      "retrievedMatches": [
+        {
+          "rank": 1,
+          "filePath": "source/index.ts",
+          "startLine": 509,
+          "endLine": 511,
+          "name": "isAsyncIterable"
+        },
+        {
+          "rank": 2,
+          "filePath": "source/index.ts",
+          "startLine": 1478,
+          "endLine": 1482,
+          "name": "assertAsyncIterable"
+        },
+        {
+          "rank": 3,
+          "filePath": "source/index.ts",
+          "startLine": 501,
+          "endLine": 503,
+          "name": "isAsyncGenerator"
+        }
+      ],
+      "endToEndLatencyMs": 2892.13,
+      "agentHops": 1,
+      "answerCitesCorrectSource": true,
+      "answer": "The function isAsyncIterable checks for the presence of the async iteration protocol by checking if the value has a function at the key Symbol.asyncIterator. Specifically, it classifies a value as AsyncIterable if it has a function property at value[Symbol.asyncIterator].\n\nThis is shown in source/index.ts at lines 509-511:\n\n```ts\nfunction isAsyncIterable<T = unknown>(value: unknown): value is AsyncIterable<T> {\n\treturn isFunction((value as AsyncIterable<T>)?.[Symbol.asyncIterator]);\n}\n```\n\nSo the protocol it checks for is the presence of the async iterator method keyed by Symbol.asyncIterator."
+    },
+    {
+      "id": "IS-11",
+      "question": "How does isBigint distinguish bigint values from numbers and boxed values?",
+      "groundTruth": [
+        {
+          "filePath": "source/index.ts",
+          "symbols": [
+            "isBigint"
+          ]
+        }
+      ],
+      "recallAt1": true,
+      "recallAt5": true,
+      "retrievedMatches": [
+        {
+          "rank": 1,
+          "filePath": "source/index.ts",
+          "startLine": 513,
+          "endLine": 515,
+          "name": "isBigint"
+        },
+        {
+          "rank": 2,
+          "filePath": "source/index.ts",
+          "startLine": 1484,
+          "endLine": 1488,
+          "name": "assertBigint"
+        }
+      ],
+      "endToEndLatencyMs": 2828.76,
+      "agentHops": 1,
+      "answerCitesCorrectSource": true,
+      "answer": "The function isBigint distinguishes bigint values from numbers and boxed values by using the typeof operator. Specifically, it checks if the typeof value is exactly 'bigint'. This check will return true only for primitive bigint values, not for numbers or boxed bigint objects.\n\nHere is the exact implementation from source/index.ts lines 513-515:\n\n```ts\nfunction isBigint(value: unknown): value is bigint {\n\treturn typeof value === 'bigint';\n}\n```\n\nSo, isBigint returns true if and only if the value is a primitive bigint, and false for numbers or boxed values (such as new BigInt(123n))."
+    },
+    {
+      "id": "IS-12",
+      "question": "How does isBoolean treat primitive booleans versus Boolean wrapper objects?",
+      "groundTruth": [
+        {
+          "filePath": "source/index.ts",
+          "symbols": [
+            "isBoolean"
+          ]
+        }
+      ],
+      "recallAt1": false,
+      "recallAt5": true,
+      "retrievedMatches": [
+        {
+          "rank": 2,
+          "filePath": "source/index.ts",
+          "startLine": 529,
+          "endLine": 531,
+          "name": "isBoolean"
+        },
+        {
+          "rank": 4,
+          "filePath": "source/index.ts",
+          "startLine": 1508,
+          "endLine": 1512,
+          "name": "assertBoolean"
+        }
+      ],
+      "endToEndLatencyMs": 5153.82,
+      "agentHops": 2,
+      "answerCitesCorrectSource": true,
+      "answer": "The function `isBoolean` is defined on lines 529-531 in `source/index.ts`. The implementation is:\n\n```ts\nfunction isBoolean(value: unknown): value is boolean {\n\treturn value === true || value === false;\n}\n```\n\nThis means `isBoolean` returns `true` only if the value is strictly the primitive boolean `true` or `false`. It does not return `true` for Boolean wrapper objects (i.e., instances of `Boolean` created via `new Boolean(true)`).\n\nFrom the code, Boolean wrapper objects are not treated as booleans by `isBoolean`. The function only accepts primitive boolean values.\n\nSupporting evidence from the rest of the file:  \n- The `detect` function (lines 195-259) throws an error if the value is a boxed primitive object, which includes boxed booleans, via `isBoxedPrimitiveObject` that checks wrappers for `String`, `Boolean`, and `Number`. This suggests boxed primitives are distinguished and generally discouraged.\n\nIn summary:  \n- `isBoolean(true)` and `isBoolean(false)` return `true`.  \n- `isBoolean(new Boolean(true))` returns `false`.  \n\nThis is because the function only checks for the primitive boolean literals and does not consider the `Boolean` wrapper objects to be booleans.\n\nRelevant code location: `source/index.ts` lines 529-531."
+    },
+    {
+      "id": "IS-13",
+      "question": "How does isClass determine whether a value is a class constructor?",
+      "groundTruth": [
+        {
+          "filePath": "source/index.ts",
+          "symbols": [
+            "isClass"
+          ]
+        }
+      ],
+      "recallAt1": true,
+      "recallAt5": true,
+      "retrievedMatches": [
+        {
+          "rank": 1,
+          "filePath": "source/index.ts",
+          "startLine": 546,
+          "endLine": 548,
+          "name": "isClass"
+        },
+        {
+          "rank": 3,
+          "filePath": "source/index.ts",
+          "startLine": 1530,
+          "endLine": 1534,
+          "name": "assertClass"
+        }
+      ],
+      "endToEndLatencyMs": 5368.52,
+      "agentHops": 2,
+      "answerCitesCorrectSource": true,
+      "answer": "The function `isClass` determines whether a value is a class constructor by checking two conditions:\n\n1. It first checks if the value is a function using the helper function `isFunction(value)`.\n2. Then it converts the function (value) to a string and tests if the string representation starts with the word \"class\" followed by either whitespace or an opening curly brace `{`. This is done using the regular expression `/^class(?:\\s+|\\{)/v.test(value.toString())`.\n\nIf both conditions are true, `isClass` returns true, indicating that the value is a class constructor. Otherwise, it returns false.\n\nThis implementation can be found in the file `source/index.ts` at lines 546-548:\n\n```ts\nfunction isClass<T = unknown>(value: unknown): value is Class<T> {\n\treturn isFunction(value) && /^class(?:\\s+|\\{)/v.test(value.toString());\n}\n```\n\nThe key idea is to detect the characteristic string form of a class constructor, which starts with the keyword \"class\".\n\nSummary:\n- `isClass` returns true for values that are functions whose string representation starts with the keyword \"class\".\n- It leverages `isFunction` to first ensure the value is a function type.\n- It then uses a regex test on the function's `toString()` output to detect the \"class\" syntax.\n\nThis logic is how the code determines if a value is a class constructor.\n\nReference: `source/index.ts` lines 546-548."
+    },
+    {
+      "id": "IS-14",
+      "question": "How does isDate determine whether a value is a Date instance?",
+      "groundTruth": [
+        {
+          "filePath": "source/index.ts",
+          "symbols": [
+            "isDate"
+          ]
+        }
+      ],
+      "recallAt1": true,
+      "recallAt5": true,
+      "retrievedMatches": [
+        {
+          "rank": 1,
+          "filePath": "source/index.ts",
+          "startLine": 554,
+          "endLine": 556,
+          "name": "isDate"
+        },
+        {
+          "rank": 2,
+          "filePath": "source/index.ts",
+          "startLine": 959,
+          "endLine": 961,
+          "name": "isValidDate"
+        },
+        {
+          "rank": 3,
+          "filePath": "source/index.ts",
+          "startLine": 1542,
+          "endLine": 1546,
+          "name": "assertDate"
+        }
+      ],
+      "endToEndLatencyMs": 6495.71,
+      "agentHops": 2,
+      "answerCitesCorrectSource": true,
+      "answer": "The function `isDate` determines whether a value is a `Date` instance by checking the internal object type tag of the value.\n\nSpecifically, it uses the helper function `getObjectType(value)` and returns `true` if the resulting string is exactly `'Date'`.\n\nHere is the relevant implementation from `source/index.ts` lines 554-556:\n\n```ts\nfunction isDate(value: unknown): value is Date {\n\treturn getObjectType(value) === 'Date';\n}\n```\n\nThe helper `getObjectType` is implemented as follows (lines 181-193):\n\n```ts\nconst getObjectType = (value: unknown): ObjectTypeName | undefined => {\n\tconst objectTypeName = Object.prototype.toString.call(value).slice(8, -1);\n\n\tif (/HTML\\w+Element/v.test(objectTypeName) && isHtmlElement(value)) {\n\t\treturn 'HTMLElement';\n\t}\n\n\tif (isObjectTypeName(objectTypeName)) {\n\t\treturn objectTypeName;\n\t}\n\n\treturn undefined;\n};\n```\n\nIt relies on the classic JavaScript way to obtain the internal class tag through `Object.prototype.toString.call(value)`, slicing to extract the type name between `[object ...]`.\n\nSo, summing up:\n- `isDate` uses `getObjectType`\n- `getObjectType` uses `Object.prototype.toString` to extract the `[object Date]` tag\n- If the tag name matches `'Date'`, then `isDate` returns `true`.\n\nThis is a robust approach to identify `Date` instances.\n\nAnswer:\nThe `isDate` function checks whether the internal object type tag of the value is \"Date\" by calling `getObjectType(value)` and comparing the result to `'Date'`. The `getObjectType` function uses `Object.prototype.toString.call(value)` and extracts the tag string between `[object ...]`, which for native `Date` instances returns `'Date'`. This is how `isDate` determines if a value is a `Date` instance.\n\nFile: `source/index.ts`, lines 554-556 and 181-193."
+    },
+    {
+      "id": "IS-15",
+      "question": "How does isEmptyArray handle an empty array and distinguish it from non-array values?",
+      "groundTruth": [
+        {
+          "filePath": "source/index.ts",
+          "symbols": [
+            "isEmptyArray"
+          ]
+        }
+      ],
+      "recallAt1": true,
+      "recallAt5": true,
+      "retrievedMatches": [
+        {
+          "rank": 1,
+          "filePath": "source/index.ts",
+          "startLine": 566,
+          "endLine": 568,
+          "name": "isEmptyArray"
+        },
+        {
+          "rank": 2,
+          "filePath": "source/index.ts",
+          "startLine": 1554,
+          "endLine": 1558,
+          "name": "assertEmptyArray"
+        }
+      ],
+      "endToEndLatencyMs": 6029.32,
+      "agentHops": 2,
+      "answerCitesCorrectSource": true,
+      "answer": "The function `isEmptyArray` handles an empty array and distinguishes it from non-array values as follows:\n\n- It takes an argument `value` of unknown type.\n- It calls the helper function `isArray(value)` to verify if the value is an array.\n- It then checks if the array's length is 0.\n- It returns `true` only if the value is confirmed to be an array and its length is 0.\n- For any non-array value or arrays with length greater than 0, it returns `false`.\n\nThis means `isEmptyArray` can distinguish an empty array from non-array values by ensuring the value is strictly an array type first (using `isArray`) and then confirming its length is zero.\n\nThis is from `source/index.ts` lines 566-568:\n```ts\nfunction isEmptyArray(value: unknown): value is never[] {\n\treturn isArray(value) && value.length === 0;\n}\n```\n\nAnd the helper it uses `isArray` is defined as (lines 472-483):\n```ts\nfunction isArray<T = unknown>(value: unknown, assertion?: (value: T) => value is T): value is T[] {\n\tif (!Array.isArray(value)) {\n\t\treturn false;\n\t}\n\n\tif (!isFunction(assertion)) {\n\t\treturn true;\n\t}\n\n\treturn value.every(element => assertion(element));\n}\n```\nThe key check is `Array.isArray(value)` in `isArray` which verifies the array nature, so `isEmptyArray` relies on this to distinguish arrays from non-arrays.\n\nThus, `isEmptyArray` returns true only for empty arrays and false for non-arrays or non-empty arrays.\n\n# Final answer\n\nThe `isEmptyArray` function returns `true` if and only if its input value is an array (determined using `isArray`, which uses `Array.isArray` internally) and its length is exactly zero. This means it handles empty arrays correctly and distinguishes them from any non-array values by returning `false` for non-arrays or non-empty arrays. (Defined in `source/index.ts` lines 566-568.)"
+    },
+    {
+      "id": "IS-16",
+      "question": "How does isEmptyObject check for no own enumerable keys, and which value categories does it exclude?",
+      "groundTruth": [
+        {
+          "filePath": "source/index.ts",
+          "symbols": [
+            "isEmptyObject"
+          ]
+        }
+      ],
+      "recallAt1": true,
+      "recallAt5": true,
+      "retrievedMatches": [
+        {
+          "rank": 1,
+          "filePath": "source/index.ts",
+          "startLine": 574,
+          "endLine": 576,
+          "name": "isEmptyObject"
+        },
+        {
+          "rank": 3,
+          "filePath": "source/index.ts",
+          "startLine": 1566,
+          "endLine": 1570,
+          "name": "assertEmptyObject"
+        }
+      ],
+      "endToEndLatencyMs": 5432.77,
+      "agentHops": 2,
+      "answerCitesCorrectSource": true,
+      "answer": "The function `isEmptyObject` checks for no own enumerable keys on an object in this way:\n\n- It first verifies that the `value` is an object using the `isObject` function (line 574).\n- Then it excludes certain value categories by ensuring that `value` is not any of: a function (`isFunction`), an array (`isArray`), a map (`isMap`), or a set (`isSet`).\n- Finally, it checks that the object has no own enumerable keys by asserting `Object.keys(value).length === 0`.\n\nSo the complete check (from `source/index.ts` lines 574-576) is:\n```ts\nfunction isEmptyObject<Key extends keyof any = string>(value: unknown): value is Record<Key, never> {\n\treturn isObject(value) && !isFunction(value) && !isArray(value) && !isMap(value) && !isSet(value) && Object.keys(value).length === 0;\n}\n```\n\nIn summary:\n- It confirms the `value` is an object but excludes these categories:\n  - Function\n  - Array\n  - Map\n  - Set\n- Then it checks that the object has zero own enumerable keys using `Object.keys(value).length === 0`.\n\nThis means it excludes special data structures and callable objects when determining if the object is empty.\n\n# Final answer\n\n`isEmptyObject` checks that the `value` is an object but not a function, array, map, or set, and that it has no own enumerable keys by checking `Object.keys(value).length === 0`. The excluded value categories are function, array, map, and set.  \nThis is implemented in `source/index.ts` lines 574-576."
+    },
+    {
+      "id": "IS-17",
+      "question": "What object-type check does isError use to recognize an Error value?",
+      "groundTruth": [
+        {
+          "filePath": "source/index.ts",
+          "symbols": [
+            "isError"
+          ]
+        }
+      ],
+      "recallAt1": true,
+      "recallAt5": true,
+      "retrievedMatches": [
+        {
+          "rank": 1,
+          "filePath": "source/index.ts",
+          "startLine": 608,
+          "endLine": 611,
+          "name": "isError"
+        },
+        {
+          "rank": 3,
+          "filePath": "source/index.ts",
+          "startLine": 1596,
+          "endLine": 1600,
+          "name": "assertError"
+        }
+      ],
+      "endToEndLatencyMs": 5617.26,
+      "agentHops": 2,
+      "answerCitesCorrectSource": true,
+      "answer": "The `isError` function recognizes an Error value by checking if the object's type string (obtained via `getObjectType(value)`) is equal to the string `\"Error\"`.\n\nSpecifically, the implementation is:\n\n```ts\nfunction isError(value: unknown): value is Error {\n\t// TODO: Use `Error.isError` when targeting Node.js 24.\n\treturn getObjectType(value) === 'Error';\n}\n```\n\nThe `getObjectType` function returns a string representing the internal object type tag (like `\"Error\"`, `\"Array\"`, `\"Date\"`, etc.) based on `Object.prototype.toString.call(value)`.\n\nThis means `isError` relies on the internal `[[Class]]` type tag string of the object to determine if it is an Error.\n\nThis is found in the file `source/index.ts` at lines 608 to 611, and the related `getObjectType` function is at lines 181-193 in the same file.\n\n### Summary:\n- `isError` returns true if `getObjectType(value) === 'Error'`.\n- `getObjectType(value)` obtains the string tag from `Object.prototype.toString.call(value)` slicing out the part inside `[object ...]`.\n- So the object-type check is a comparison of the internal `toString` tag string against `'Error'`.\n\nFile: `source/index.ts`, lines 181-193, and 608-611."
+    },
+    {
+      "id": "IS-18",
+      "question": "How does isEvenInteger handle numeric inputs and determine whether an integer is even?",
+      "groundTruth": [
+        {
+          "filePath": "source/index.ts",
+          "symbols": [
+            "isEvenInteger"
+          ]
+        }
+      ],
+      "recallAt1": true,
+      "recallAt5": true,
+      "retrievedMatches": [
+        {
+          "rank": 1,
+          "filePath": "source/index.ts",
+          "startLine": 615,
+          "endLine": 617,
+          "name": "isEvenInteger"
+        },
+        {
+          "rank": 5,
+          "filePath": "source/index.ts",
+          "startLine": 1602,
+          "endLine": 1606,
+          "name": "assertEvenInteger"
+        }
+      ],
+      "endToEndLatencyMs": 5199.23,
+      "agentHops": 2,
+      "answerCitesCorrectSource": true,
+      "answer": "The function `isEvenInteger` is defined at source/index.ts lines 615-617:\n\n```ts\nfunction isEvenInteger(value: unknown): boolean {\n\treturn isAbsoluteModule2(0)(value);\n}\n```\n\nThis function calls `isAbsoluteModule2(0)` and then calls the resulting function with `value`.\n\nThe helper function `isAbsoluteModule2` is defined at source/index.ts lines 387-389:\n\n```ts\nfunction isAbsoluteModule2(remainder: 0 | 1) {\n\treturn (value: unknown): value is number => isInteger(value) && Math.abs(value % 2) === remainder;\n}\n```\n\nThis means `isAbsoluteModule2(0)` returns a function that takes a value and checks two conditions:\n1. The value is an integer (checked by `isInteger`).\n2. The absolute value of the value modulo 2 equals 0 (which means the integer is even).\n\nThe `isInteger` function used here is defined at lines 708-710:\n\n```ts\nfunction isInteger(value: unknown): boolean {\n\treturn Number.isInteger(value);\n}\n```\n\nThis uses JavaScript's native `Number.isInteger` to check if the value is an integer.\n\n### Summary\n- `isEvenInteger` takes an unknown value.\n- It checks if the value is an integer using `Number.isInteger`.\n- Then it checks if the remainder of the integer divided by 2 (`value % 2`) is 0 in absolute value, confirming the number is even.\n- If both checks pass, it returns `true`; otherwise `false`.\n\nThis approach handles numeric inputs by first verifying integer-ness and then verifying evenness by modulus operation.\n\nFile: `source/index.ts` lines 387-389 and 615-617 provide the complete logic."
+    },
+    {
+      "id": "IS-19",
+      "question": "How does isFalsy define falsy values beyond a simple boolean type check?",
+      "groundTruth": [
+        {
+          "filePath": "source/index.ts",
+          "symbols": [
+            "isFalsy"
+          ]
+        }
+      ],
+      "recallAt1": true,
+      "recallAt5": true,
+      "retrievedMatches": [
+        {
+          "rank": 1,
+          "filePath": "source/index.ts",
+          "startLine": 620,
+          "endLine": 622,
+          "name": "isFalsy"
+        },
+        {
+          "rank": 2,
+          "filePath": "source/index.ts",
+          "startLine": 1608,
+          "endLine": 1612,
+          "name": "assertFalsy"
+        }
+      ],
+      "endToEndLatencyMs": 5916.94,
+      "agentHops": 2,
+      "answerCitesCorrectSource": true,
+      "answer": "The function `isFalsy` is defined very simply as follows in source/index.ts lines 620-622:\n\n```ts\nfunction isFalsy(value: unknown): value is Falsy {\n\treturn !value;\n}\n```\n\nThis means `isFalsy` uses the JavaScript truthiness check: it returns true if the value coerces to `false` in a boolean context by using the logical not operator `!`.\n\nAdditionally, the type `Falsy` itself is defined more specifically in source/types.ts line 58:\n\n```ts\ntype Falsy = false | 0 | 0n | '' | null | undefined;\n```\n\nThis type enumerates the exact values considered falsy:  \n- `false` (boolean false)  \n- `0` (number zero)  \n- `0n` (bigint zero)  \n- `''` (empty string)  \n- `null`  \n- `undefined`  \n\nTherefore, beyond a simple boolean type check, `isFalsy` in practice narrows down the falsy values to this set of specific literal values by the type predicate `value is Falsy`. The logic behind `!value` covers all these cases naturally due to JavaScript coercion rules.\n\nIn summary:\n\n- The runtime check for falsy is `!value`.  \n- The type refinement defines falsy very specifically as these canonical falsy values: `false`, `0`, `0n`, `''`, `null`, and `undefined`.\n\nThis is how it defines falsy values beyond a mere boolean type check: by explicitly typing the possible falsy values as this union type `Falsy`.\n\n# Reference\n- `isFalsy` function: source/index.ts lines 620-622  \n- `Falsy` type: source/types.ts line 58"
+    },
+    {
+      "id": "IS-20",
+      "question": "How does isFiniteNumber treat NaN and positive or negative infinity?",
+      "groundTruth": [
+        {
+          "filePath": "source/index.ts",
+          "symbols": [
+            "isFiniteNumber"
+          ]
+        }
+      ],
+      "recallAt1": false,
+      "recallAt5": true,
+      "retrievedMatches": [
+        {
+          "rank": 2,
+          "filePath": "source/index.ts",
+          "startLine": 625,
+          "endLine": 627,
+          "name": "isFiniteNumber"
+        }
+      ],
+      "endToEndLatencyMs": 2449.26,
+      "agentHops": 1,
+      "answerCitesCorrectSource": true,
+      "answer": "The function isFiniteNumber(value: unknown): boolean simply returns the result of Number.isFinite(value).\n\nNumber.isFinite returns false for NaN, +Infinity, and -Infinity. Therefore, isFiniteNumber treats NaN and positive or negative infinity as not finite (returns false).\n\nThis is confirmed in the source/index.ts file, lines 625-627:\n\n```typescript\nfunction isFiniteNumber(value: unknown): boolean {\n\treturn Number.isFinite(value);\n}\n```"
+    }
+  ]
+}

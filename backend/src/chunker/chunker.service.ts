@@ -1,6 +1,7 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { Parser, Node, Language } from 'web-tree-sitter';
 import * as path from 'path';
+import { performance } from 'node:perf_hooks';
 
 export interface CodeChunk {
     fileName: string;
@@ -77,8 +78,14 @@ export class ChunkerService implements OnModuleInit {
             return [];
         }
 
+        const parseStartedAt = performance.now();
         const tree = this.pythonParser.parse(sourceCode);
-        if (!tree) return [];
+        const parseMs = performance.now() - parseStartedAt;
+        const chunkingStartedAt = performance.now();
+        if (!tree) {
+            this.logChunkTiming(fileName, 'python', parseMs, chunkingStartedAt, 0);
+            return [];
+        }
         const chunks: CodeChunk[] = [];
 
         const traverse = (node: Node, currentClass?: string): void => {
@@ -122,7 +129,7 @@ export class ChunkerService implements OnModuleInit {
         };
 
         traverse(tree.rootNode);
-        this.logger.debug(`Parsed ${chunks.length} chunks from ${fileName}`);
+        this.logChunkTiming(fileName, 'python', parseMs, chunkingStartedAt, chunks.length);
         return chunks;
     }
     chunkTypeScriptCode(fileName: string, sourceCode: string, isTsx = false): CodeChunk[] {
@@ -131,8 +138,15 @@ export class ChunkerService implements OnModuleInit {
             this.logger.error(`${isTsx ? 'TSX' : 'TypeScript'} parser not initialized`);
             return [];
         }
+        const grammar = isTsx ? 'tsx' : 'typescript';
+        const parseStartedAt = performance.now();
         const tree = parser.parse(sourceCode);
-        if (!tree) return [];
+        const parseMs = performance.now() - parseStartedAt;
+        const chunkingStartedAt = performance.now();
+        if (!tree) {
+            this.logChunkTiming(fileName, grammar, parseMs, chunkingStartedAt, 0);
+            return [];
+        }
         const chunks: CodeChunk[] = [];
         const traverse = (node: Node, currentClass?: string): void => {
             if (node.type === 'interface_declaration') {
@@ -232,7 +246,7 @@ export class ChunkerService implements OnModuleInit {
             }
         };
         traverse(tree.rootNode);
-        this.logger.debug(`Parsed ${chunks.length} chunks from ${fileName}`);
+        this.logChunkTiming(fileName, grammar, parseMs, chunkingStartedAt, chunks.length);
         return chunks;
     }
     chunkJavaScriptCode(fileName: string, sourceCode: string): CodeChunk[] {
@@ -240,8 +254,14 @@ export class ChunkerService implements OnModuleInit {
             this.logger.error('JavaScript parser not initialized');
             return [];
         }
+        const parseStartedAt = performance.now();
         const tree = this.jsParser.parse(sourceCode);
-        if (!tree) return [];
+        const parseMs = performance.now() - parseStartedAt;
+        const chunkingStartedAt = performance.now();
+        if (!tree) {
+            this.logChunkTiming(fileName, 'javascript', parseMs, chunkingStartedAt, 0);
+            return [];
+        }
         const chunks: CodeChunk[] = [];
         const traverse = (node: Node, currentClass?: string): void => {
             if (node.type === 'class_declaration' || node.type === 'class') {
@@ -317,8 +337,28 @@ export class ChunkerService implements OnModuleInit {
             }
         };
         traverse(tree.rootNode);
-        this.logger.debug(`Parsed ${chunks.length} chunks from ${fileName}`);
+        this.logChunkTiming(fileName, 'javascript', parseMs, chunkingStartedAt, chunks.length);
         return chunks;
+    }
+
+    private logChunkTiming(
+        fileName: string,
+        grammar: string,
+        parseMs: number,
+        chunkingStartedAt: number,
+        chunkCount: number,
+    ): void {
+        this.logger.log(
+            JSON.stringify({
+                event: 'timing',
+                stage: 'ast_parse_and_chunk_extraction',
+                filePath: fileName,
+                grammar,
+                parseMs: Number(parseMs.toFixed(2)),
+                chunkingMs: Number((performance.now() - chunkingStartedAt).toFixed(2)),
+                chunkCount,
+            }),
+        );
     }
 
 }

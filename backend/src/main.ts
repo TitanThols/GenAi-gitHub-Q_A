@@ -20,7 +20,10 @@ async function bootstrap() {
   );
 
   const origins = configService
-    .get<string>('ALLOWED_ORIGINS', 'http://localhost:5173')
+    .get<string>(
+      'ALLOWED_ORIGINS',
+      'http://localhost:5173,http://localhost:5174',
+    )
     .split(',')
     .map((o) => o.trim());
 

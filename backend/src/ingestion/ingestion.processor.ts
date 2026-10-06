@@ -8,6 +8,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
 import { randomUUID } from 'crypto';
+import { performance } from 'node:perf_hooks';
 
 import { Repo, RepoStatus } from '../repos/repo.entity';
 import { ChunkerService, CodeChunk } from '../chunker/chunker.service';
@@ -48,6 +49,11 @@ export class IngestionProcessor extends WorkerHost {
     async process(job: Job<{ repoId: string; url: string }>): Promise<void> {
         const { repoId, url } = job.data;
         const tempDir = path.join(os.tmpdir(), 'repos', repoId);
+        const ingestionStartedAt = performance.now();
+        let indexedFileCount = 0;
+        let indexedChunkCount = 0;
+        let sourceCommit = '';
+        let finalStatus: 'indexed' | 'failed' = 'failed';
 
         this.logger.log(`Starting ingestion for repo ${repoId} (${url})`);
 
@@ -62,11 +68,35 @@ export class IngestionProcessor extends WorkerHost {
             await fs.promises.mkdir(tempDir, { recursive: true });
 
             const git = simpleGit();
+            const cloneStartedAt = performance.now();
             await git.clone(url, tempDir, ['--depth=1', '--single-branch']);
+            sourceCommit = await git.cwd(tempDir).revparse(['HEAD']);
+            this.logger.log(
+                JSON.stringify({
+                    event: 'timing',
+                    stage: 'repo_clone',
+                    repoId,
+                    sourceCommit,
+                    durationMs: Number((performance.now() - cloneStartedAt).toFixed(2)),
+                }),
+            );
 
             await this.updateStatus(repo, RepoStatus.CHUNKING);
             const filePaths: string[] = [];
+            const fileDiscoveryStartedAt = performance.now();
             this.collectFiles(tempDir, filePaths);
+            indexedFileCount = filePaths.length;
+            this.logger.log(
+                JSON.stringify({
+                    event: 'timing',
+                    stage: 'file_discovery',
+                    repoId,
+                    durationMs: Number(
+                        (performance.now() - fileDiscoveryStartedAt).toFixed(2),
+                    ),
+                    fileCount: indexedFileCount,
+                }),
+            );
 
             if (filePaths.length === 0) {
                 throw new Error('No supported TypeScript, JavaScript, or Python files found in repository.');
@@ -74,6 +104,7 @@ export class IngestionProcessor extends WorkerHost {
 
             const allChunks: { chunk: CodeChunk; relativePath: string }[] = [];
 
+            const chunkingStartedAt = performance.now();
             for (const filePath of filePaths) {
                 const relativePath = path.relative(tempDir, filePath);
                 const content = fs.readFileSync(filePath, 'utf-8');
@@ -83,14 +114,25 @@ export class IngestionProcessor extends WorkerHost {
                     allChunks.push({ chunk, relativePath });
                 }
             }
+            indexedChunkCount = allChunks.length;
+            this.logger.log(
+                JSON.stringify({
+                    event: 'timing',
+                    stage: 'chunking',
+                    repoId,
+                    durationMs: Number((performance.now() - chunkingStartedAt).toFixed(2)),
+                    fileCount: indexedFileCount,
+                    chunkCount: indexedChunkCount,
+                }),
+            );
 
             this.logger.log(
-                `Repo ${repoId}: Discovered ${filePaths.length} files, generated ${allChunks.length} chunks.`,
+                `Repo ${repoId}: Discovered ${indexedFileCount} files, generated ${indexedChunkCount} chunks.`,
             );
 
             await this.updateStatus(repo, RepoStatus.EMBEDDING, {
-                totalFiles: filePaths.length,
-                totalChunks: allChunks.length,
+                totalFiles: indexedFileCount,
+                totalChunks: indexedChunkCount,
             });
 
             const batchSize = 10;
@@ -103,13 +145,27 @@ export class IngestionProcessor extends WorkerHost {
                         }\n${chunk.content}`,
                 );
 
+                const embeddingStartedAt = performance.now();
                 const vectors = await this.embeddingService.embedBatch(textsToEmbed);
+                this.logger.log(
+                    JSON.stringify({
+                        event: 'timing',
+                        stage: 'ingestion_embedding_batch',
+                        repoId,
+                        inputCount: textsToEmbed.length,
+                        chunkOffset: i,
+                        durationMs: Number(
+                            (performance.now() - embeddingStartedAt).toFixed(2),
+                        ),
+                    }),
+                );
 
                 const points: VectorPoint[] = batch.map(({ chunk, relativePath }, index) => ({
                     id: randomUUID(),
                     vector: vectors[index],
                     payload: {
                         repoId,
+                        sourceCommit,
                         filePath: relativePath,
                         startLine: chunk.startLine,
                         endLine: chunk.endLine,
@@ -125,12 +181,10 @@ export class IngestionProcessor extends WorkerHost {
                     `Repo ${repoId}: Upserted chunks ${i + 1} to ${Math.min(i + batchSize, allChunks.length)} of ${allChunks.length}`,
                 );
 
-                if (i + batchSize < allChunks.length) {
-                    await new Promise((resolve) => setTimeout(resolve, 7000));
-                }
             }
 
             await this.updateStatus(repo, RepoStatus.INDEXED);
+            finalStatus = 'indexed';
             this.logger.log(`Repo ${repoId} successfully indexed!`);
         } catch (error: any) {
             this.logger.error(`Ingestion failed for repo ${repoId}`, error);
@@ -142,6 +196,17 @@ export class IngestionProcessor extends WorkerHost {
             await fs.promises.rm(tempDir, { recursive: true, force: true }).catch((err) => {
                 this.logger.warn(`Failed to clean up temp dir ${tempDir}`, err);
             });
+            this.logger.log(
+                JSON.stringify({
+                    event: 'timing',
+                    stage: 'total_indexing',
+                    repoId,
+                    status: finalStatus,
+                    durationMs: Number((performance.now() - ingestionStartedAt).toFixed(2)),
+                    fileCount: indexedFileCount,
+                    chunkCount: indexedChunkCount,
+                }),
+            );
         }
     }
 

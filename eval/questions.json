@@ -1,0 +1,211 @@
+{
+  "schemaVersion": 1,
+  "repository": {
+    "name": "sindresorhus/is",
+    "url": "https://github.com/sindresorhus/is",
+    "ref": "main",
+    "commit": "e9c026c611c1160eaad50da00be4e676b626018f"
+  },
+  "questions": [
+    {
+      "id": "IS-01",
+      "question": "How does isAll evaluate one predicate against values, and how does it combine an array of predicates?",
+      "groundTruth": [
+        {
+          "filePath": "source/index.ts",
+          "symbols": ["isAll"]
+        }
+      ]
+    },
+    {
+      "id": "IS-02",
+      "question": "How does isAny determine whether at least one predicate matches, including when predicates are provided as an array?",
+      "groundTruth": [
+        {
+          "filePath": "source/index.ts",
+          "symbols": ["isAny"]
+        }
+      ]
+    },
+    {
+      "id": "IS-03",
+      "question": "How does isOptional combine an optional undefined value with a supplied type guard?",
+      "groundTruth": [
+        {
+          "filePath": "source/index.ts",
+          "symbols": ["isOptional"]
+        }
+      ]
+    },
+    {
+      "id": "IS-04",
+      "question": "How does isArray validate an array and optionally check its elements with an assertion?",
+      "groundTruth": [
+        {
+          "filePath": "source/index.ts",
+          "symbols": ["isArray"]
+        }
+      ]
+    },
+    {
+      "id": "IS-05",
+      "question": "What does isArrayBuffer recognize, and how does it distinguish an ArrayBuffer from other binary views?",
+      "groundTruth": [
+        {
+          "filePath": "source/index.ts",
+          "symbols": ["isArrayBuffer"]
+        }
+      ]
+    },
+    {
+      "id": "IS-06",
+      "question": "How does isArrayLike determine whether a value has the shape of an array-like object?",
+      "groundTruth": [
+        {
+          "filePath": "source/index.ts",
+          "symbols": ["isArrayLike"]
+        }
+      ]
+    },
+    {
+      "id": "IS-07",
+      "question": "How does isArrayOf build a reusable predicate that checks every member of an array?",
+      "groundTruth": [
+        {
+          "filePath": "source/index.ts",
+          "symbols": ["isArrayOf"]
+        }
+      ]
+    },
+    {
+      "id": "IS-08",
+      "question": "How does isAsyncFunction identify an asynchronous function?",
+      "groundTruth": [
+        {
+          "filePath": "source/index.ts",
+          "symbols": ["isAsyncFunction"]
+        }
+      ]
+    },
+    {
+      "id": "IS-09",
+      "question": "How does isAsyncGenerator distinguish an async generator object?",
+      "groundTruth": [
+        {
+          "filePath": "source/index.ts",
+          "symbols": ["isAsyncGenerator"]
+        }
+      ]
+    },
+    {
+      "id": "IS-10",
+      "question": "What protocol does isAsyncIterable check for when classifying a value?",
+      "groundTruth": [
+        {
+          "filePath": "source/index.ts",
+          "symbols": ["isAsyncIterable"]
+        }
+      ]
+    },
+    {
+      "id": "IS-11",
+      "question": "How does isBigint distinguish bigint values from numbers and boxed values?",
+      "groundTruth": [
+        {
+          "filePath": "source/index.ts",
+          "symbols": ["isBigint"]
+        }
+      ]
+    },
+    {
+      "id": "IS-12",
+      "question": "How does isBoolean treat primitive booleans versus Boolean wrapper objects?",
+      "groundTruth": [
+        {
+          "filePath": "source/index.ts",
+          "symbols": ["isBoolean"]
+        }
+      ]
+    },
+    {
+      "id": "IS-13",
+      "question": "How does isClass determine whether a value is a class constructor?",
+      "groundTruth": [
+        {
+          "filePath": "source/index.ts",
+          "symbols": ["isClass"]
+        }
+      ]
+    },
+    {
+      "id": "IS-14",
+      "question": "How does isDate determine whether a value is a Date instance?",
+      "groundTruth": [
+        {
+          "filePath": "source/index.ts",
+          "symbols": ["isDate"]
+        }
+      ]
+    },
+    {
+      "id": "IS-15",
+      "question": "How does isEmptyArray handle an empty array and distinguish it from non-array values?",
+      "groundTruth": [
+        {
+          "filePath": "source/index.ts",
+          "symbols": ["isEmptyArray"]
+        }
+      ]
+    },
+    {
+      "id": "IS-16",
+      "question": "How does isEmptyObject check for no own enumerable keys, and which value categories does it exclude?",
+      "groundTruth": [
+        {
+          "filePath": "source/index.ts",
+          "symbols": ["isEmptyObject"]
+        }
+      ]
+    },
+    {
+      "id": "IS-17",
+      "question": "What object-type check does isError use to recognize an Error value?",
+      "groundTruth": [
+        {
+          "filePath": "source/index.ts",
+          "symbols": ["isError"]
+        }
+      ]
+    },
+    {
+      "id": "IS-18",
+      "question": "How does isEvenInteger handle numeric inputs and determine whether an integer is even?",
+      "groundTruth": [
+        {
+          "filePath": "source/index.ts",
+          "symbols": ["isEvenInteger"]
+        }
+      ]
+    },
+    {
+      "id": "IS-19",
+      "question": "How does isFalsy define falsy values beyond a simple boolean type check?",
+      "groundTruth": [
+        {
+          "filePath": "source/index.ts",
+          "symbols": ["isFalsy"]
+        }
+      ]
+    },
+    {
+      "id": "IS-20",
+      "question": "How does isFiniteNumber treat NaN and positive or negative infinity?",
+      "groundTruth": [
+        {
+          "filePath": "source/index.ts",
+          "symbols": ["isFiniteNumber"]
+        }
+      ]
+    }
+  ]
+}

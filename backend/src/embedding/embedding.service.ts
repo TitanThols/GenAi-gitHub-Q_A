@@ -1,93 +1,132 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { GoogleGenAI } from '@google/genai';
+import OpenAI from 'openai';
+import type { APIError } from 'openai';
+import { performance } from 'node:perf_hooks';
 
+const MAX_RETRIES = 5;
+const MAX_RETRY_DELAY_MS = 60_000;
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 @Injectable()
 export class EmbeddingService {
   private readonly logger = new Logger(EmbeddingService.name);
-  private readonly genAI: GoogleGenAI;
-  private readonly model = 'gemini-embedding-001';
+  private readonly openai: OpenAI;
+  readonly model = 'text-embedding-3-small';
+  readonly dimensions = 1536;
 
   constructor(private readonly configService: ConfigService) {
-    const apiKey = this.configService.get<string>('GEMINI_API_KEY');
-    if (!apiKey) {
-      this.logger.warn('GEMINI_API_KEY is not set, EmbeddingService will not work');
-    }
-    this.genAI = new GoogleGenAI({ apiKey: apiKey || '' });
+    this.openai = new OpenAI({
+      apiKey: this.configService.getOrThrow<string>('OPENAI_API_KEY'),
+      maxRetries: 0,
+    });
   }
 
   async embedQuery(text: string): Promise<number[]> {
-    const embeddings = await this.embedBatch([text]);
-    return embeddings[0] || [];
+    const [embedding] = await this.embedBatch([text]);
+    if (!embedding) {
+      throw new Error('OpenAI returned no embedding for the query.');
+    }
+    return embedding;
   }
 
-  private async embedSliceWithRetry(slice: string[], maxRetries = 5): Promise<number[][]> {
-    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+  private async embedSliceWithRetry(slice: string[]): Promise<number[][]> {
+    const startedAt = performance.now();
+    for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
       try {
-        const response = await this.genAI.models.embedContent({
+        const response = await this.openai.embeddings.create({
           model: this.model,
-          contents: slice,
-          config: { outputDimensionality: 768 },
+          input: slice,
+          dimensions: this.dimensions,
         });
-        return response.embeddings?.map((e) => e.values ?? []) ?? [];
-      } catch (error: any) {
-        const isRateLimit =
-          error?.status === 429 ||
-          error?.code === 429 ||
-          error?.message?.includes('429') ||
-          error?.message?.includes('RESOURCE_EXHAUSTED');
 
-        if (isRateLimit && attempt < maxRetries) {
-          let waitTimeMs = 50_000;
-
-          const match = error?.message?.match(/retry in ([0-9.]+)s/i);
-          if (match && match[1]) {
-            const parsedSeconds = parseFloat(match[1]);
-            if (!isNaN(parsedSeconds) && parsedSeconds > 0) {
-              waitTimeMs = Math.ceil(parsedSeconds * 1000) + 2000;
-            }
-          } else if (Array.isArray(error?.details)) {
-            const retryInfo = error.details.find((d: any) => d?.retryDelay);
-            if (retryInfo?.retryDelay) {
-              const seconds = parseFloat(retryInfo.retryDelay.replace('s', ''));
-              if (!isNaN(seconds) && seconds > 0) {
-                waitTimeMs = Math.ceil(seconds * 1000) + 2000;
-              }
-            }
-          }
-
-          this.logger.warn(
-            `Rate limit hit (attempt ${attempt}/${maxRetries}). Retrying in ${(waitTimeMs / 1000).toFixed(1)}s...`,
+        const embeddings = response.data
+          .sort((a, b) => a.index - b.index)
+          .map((item) => item.embedding);
+        if (embeddings.length !== slice.length) {
+          throw new Error(
+            `OpenAI returned ${embeddings.length} embeddings for ${slice.length} inputs.`,
           );
-          await sleep(waitTimeMs);
-          continue;
+        }
+        this.logger.log(
+          JSON.stringify({
+            event: 'timing',
+            stage: 'embedding',
+            provider: 'openai',
+            model: this.model,
+            inputCount: slice.length,
+            attempts: attempt,
+            durationMs: Number((performance.now() - startedAt).toFixed(2)),
+          }),
+        );
+        return embeddings;
+      } catch (error: unknown) {
+        const isRetryable =
+          error instanceof OpenAI.APIError &&
+          (error.status === 429 || (error.status !== undefined && error.status >= 500));
+
+        if (!isRetryable || attempt === MAX_RETRIES) {
+          this.logger.error(
+            `Failed to embed ${slice.length} texts after ${attempt} attempt(s): ${
+              error instanceof Error ? error.message : String(error)
+            }`,
+          );
+          this.logger.error(
+            JSON.stringify({
+              event: 'timing',
+              stage: 'embedding',
+              provider: 'openai',
+              model: this.model,
+              inputCount: slice.length,
+              attempts: attempt,
+              durationMs: Number((performance.now() - startedAt).toFixed(2)),
+              outcome: 'failed',
+            }),
+          );
+          throw error;
         }
 
-        this.logger.error(
-          `Failed to embed ${slice.length} texts after ${attempt} attempt(s): ${error?.message || error}`,
+        const retryAfterMs = this.getRetryAfterMs(error);
+        const delayMs =
+          retryAfterMs ??
+          Math.min(1_000 * 2 ** (attempt - 1), MAX_RETRY_DELAY_MS);
+
+        this.logger.warn(
+          `OpenAI embedding request failed (attempt ${attempt}/${MAX_RETRIES}); retrying in ${delayMs}ms.`,
         );
-        throw error;
+        await sleep(delayMs);
       }
     }
-    throw new Error(`Failed to embed ${slice.length} texts: Max retries exceeded`);
+
+    throw new Error('OpenAI embedding retries exhausted unexpectedly.');
+  }
+
+  private getRetryAfterMs(error: APIError): number | undefined {
+    const retryAfterMs = error.headers?.get('retry-after-ms');
+    if (retryAfterMs) {
+      const parsed = Number(retryAfterMs);
+      if (Number.isFinite(parsed) && parsed >= 0) return parsed;
+    }
+
+    const retryAfter = error.headers?.get('retry-after');
+    if (retryAfter) {
+      const seconds = Number(retryAfter);
+      if (Number.isFinite(seconds) && seconds >= 0) return seconds * 1000;
+    }
+
+    return undefined;
   }
 
   async embedBatch(texts: string[], batchSize = 10): Promise<number[][]> {
     if (!texts.length) return [];
+    if (!Number.isInteger(batchSize) || batchSize < 1) {
+      throw new Error(`Invalid embedding batch size: ${batchSize}`);
+    }
 
     const results: number[][] = [];
-
     for (let i = 0; i < texts.length; i += batchSize) {
       const slice = texts.slice(i, i + batchSize);
-
-      const embeddings = await this.embedSliceWithRetry(slice);
-      results.push(...embeddings);
-
-      if (i + batchSize < texts.length) {
-        await sleep(7_000);
-      }
+      results.push(...(await this.embedSliceWithRetry(slice)));
     }
 
     return results;

@@ -2,6 +2,7 @@ import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { QdrantClient } from '@qdrant/js-client-rest';
 import { CodeChunk } from '../chunker/chunker.service';
+import { performance } from 'node:perf_hooks';
 
 export interface VectorPoint {
     id: string;
@@ -23,8 +24,8 @@ export interface VectorPoint {
 export class VectorStoreService implements OnModuleInit {
     private readonly logger = new Logger(VectorStoreService.name);
     private readonly client: QdrantClient;
-    public readonly collectionName = 'codebase-embeddings';
-    public readonly vectorDimension = 768;
+    public readonly collectionName = 'codebase-embeddings-openai-v1';
+    public readonly vectorDimension = 1536;
 
     constructor(private readonly configService: ConfigService) {
         const url = this.configService.get<string>('QDRANT_URL') || 'http://localhost:6333';
@@ -63,35 +64,69 @@ export class VectorStoreService implements OnModuleInit {
         if (!points.length) return;
 
         const batchSize = 100;
-        for (let i = 0; i < points.length; i += batchSize) {
-            const batch = points.slice(i, i + batchSize);
-            await this.client.upsert(this.collectionName, {
-                wait: true,
-                points: batch.map((p) => ({
-                    id: p.id,
-                    vector: p.vector,
-                    payload: p.payload,
-                })),
-            });
+        const startedAt = performance.now();
+        let succeeded = false;
+        try {
+            for (let i = 0; i < points.length; i += batchSize) {
+                const batch = points.slice(i, i + batchSize);
+                await this.client.upsert(this.collectionName, {
+                    wait: true,
+                    points: batch.map((p) => ({
+                        id: p.id,
+                        vector: p.vector,
+                        payload: p.payload,
+                    })),
+                });
+            }
+            succeeded = true;
+        } finally {
+            this.logger.log(
+                JSON.stringify({
+                    event: 'timing',
+                    stage: 'qdrant_upsert',
+                    collection: this.collectionName,
+                    pointCount: points.length,
+                    durationMs: Number((performance.now() - startedAt).toFixed(2)),
+                    outcome: succeeded ? 'success' : 'failed',
+                }),
+            );
         }
     }
 
     async search(repoId: string, vector: number[], limit = 10) {
-        const result = await this.client.query(this.collectionName, {
-            query: vector,
-            filter: {
-                must: [
-                    {
-                        key: 'repoId',
-                        match: { value: repoId },
-                    },
-                ],
-            },
-            limit,
-            with_payload: true,
-        });
-
-        return result.points;
+        const startedAt = performance.now();
+        let resultCount = 0;
+        let succeeded = false;
+        try {
+            const result = await this.client.query(this.collectionName, {
+                query: vector,
+                filter: {
+                    must: [
+                        {
+                            key: 'repoId',
+                            match: { value: repoId },
+                        },
+                    ],
+                },
+                limit,
+                with_payload: true,
+            });
+            resultCount = result.points.length;
+            succeeded = true;
+            return result.points;
+        } finally {
+            this.logger.log(
+                JSON.stringify({
+                    event: 'timing',
+                    stage: 'retrieval',
+                    repoId,
+                    limit,
+                    resultCount,
+                    durationMs: Number((performance.now() - startedAt).toFixed(2)),
+                    outcome: succeeded ? 'success' : 'failed',
+                }),
+            );
+        }
     }
 
     async deleteRepoPoints(repoId: string): Promise<void> {
