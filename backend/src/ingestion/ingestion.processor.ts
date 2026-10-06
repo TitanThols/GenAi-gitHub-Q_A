@@ -12,6 +12,7 @@ import { performance } from 'node:perf_hooks';
 
 import { Repo, RepoStatus } from '../repos/repo.entity';
 import { ChunkerService, CodeChunk } from '../chunker/chunker.service';
+import { splitOversizedChunkForEmbedding } from '../chunker/chunk-utils';
 import { EmbeddingService } from '../embedding/embedding.service';
 import { VectorStoreService, VectorPoint } from '../vector-store/vector-store.service';
 
@@ -108,7 +109,9 @@ export class IngestionProcessor extends WorkerHost {
             for (const filePath of filePaths) {
                 const relativePath = path.relative(tempDir, filePath);
                 const content = fs.readFileSync(filePath, 'utf-8');
-                const chunks = this.chunkerService.chunkFile(relativePath, content);
+                const chunks = this.chunkerService
+                    .chunkFile(relativePath, content)
+                    .flatMap(splitOversizedChunkForEmbedding);
 
                 for (const chunk of chunks) {
                     allChunks.push({ chunk, relativePath });

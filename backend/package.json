@@ -15,6 +15,7 @@
     "eval": "node ../eval/run-eval.mjs",
     "eval:validate": "node ../eval/run-eval.mjs --validate",
     "eval:ablation": "node ../eval/run-ablation.mjs",
+    "benchmark:index": "node ../eval/run-index-benchmark.mjs",
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
     "test": "node --experimental-vm-modules node_modules/.bin/jest",
     "test:watch": "node --experimental-vm-modules node_modules/.bin/jest --watch",

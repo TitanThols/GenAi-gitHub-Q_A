@@ -1,0 +1,83 @@
+{
+  "runAt": "2026-10-06T20:59:01.119Z",
+  "embeddingModel": "text-embedding-3-small",
+  "embeddingDimensions": 1536,
+  "collection": "codebase-embeddings-index-benchmark-v1",
+  "methodology": {
+    "extensions": [
+      ".ts",
+      ".tsx",
+      ".js",
+      ".jsx",
+      ".py"
+    ],
+    "maxFileSizeBytes": 512000,
+    "embeddingBatchSize": 10,
+    "interBatchPauseMs": 0,
+    "indexingPipeline": "Tree-sitter AST chunking -> OpenAI embeddings -> Qdrant upsert",
+    "totalIndexTimeDefinition": "Wall-clock time from start of clone through completion of the final Qdrant upsert.",
+    "rateLimitBackoff": "Sum of actual retry delays invoked by EmbeddingService during this indexing run."
+  },
+  "repositories": [
+    {
+      "name": "sindresorhus/is",
+      "url": "https://github.com/sindresorhus/is",
+      "sizeClass": "small",
+      "sourceCommit": "e9c026c611c1160eaad50da00be4e676b626018f",
+      "repoId": "sindresorhus/is",
+      "fileCount": 5,
+      "chunkCount": 340,
+      "totalIndexTimeMs": 16105.24,
+      "stageTimesMs": {
+        "clone": 1304.06,
+        "fileDiscoveryAndChunking": 131.34,
+        "embedding": 14085.95,
+        "qdrantUpsert": 565.08
+      },
+      "embeddingBatches": 34,
+      "rateLimitRetryCount": 0,
+      "rateLimitBackoffMs": 0,
+      "status": "indexed"
+    },
+    {
+      "name": "sindresorhus/ky",
+      "url": "https://github.com/sindresorhus/ky",
+      "sizeClass": "medium",
+      "sourceCommit": "0d59458a0a58e1c3d7c6db0ab17ed5c7cd671e47",
+      "repoId": "sindresorhus/ky",
+      "fileCount": 87,
+      "chunkCount": 417,
+      "totalIndexTimeMs": 19391.63,
+      "stageTimesMs": {
+        "clone": 1237.15,
+        "fileDiscoveryAndChunking": 357.15,
+        "embedding": 17106.68,
+        "qdrantUpsert": 679.66
+      },
+      "embeddingBatches": 42,
+      "rateLimitRetryCount": 0,
+      "rateLimitBackoffMs": 0,
+      "status": "indexed"
+    },
+    {
+      "name": "sindresorhus/type-fest",
+      "url": "https://github.com/sindresorhus/type-fest",
+      "sizeClass": "large",
+      "sourceCommit": "e9f614f191aa039e4aefa2d41d62c2a3fd070cfd",
+      "repoId": "sindresorhus/type-fest",
+      "fileCount": 457,
+      "chunkCount": 1512,
+      "totalIndexTimeMs": 63559.17,
+      "stageTimesMs": {
+        "clone": 1634.85,
+        "fileDiscoveryAndChunking": 669.69,
+        "embedding": 58789.51,
+        "qdrantUpsert": 2444.71
+      },
+      "embeddingBatches": 152,
+      "rateLimitRetryCount": 0,
+      "rateLimitBackoffMs": 0,
+      "status": "indexed"
+    }
+  ]
+}

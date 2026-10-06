@@ -30,7 +30,10 @@ export class EmbeddingService {
     return embedding;
   }
 
-  private async embedSliceWithRetry(slice: string[]): Promise<number[][]> {
+  private async embedSliceWithRetry(
+    slice: string[],
+    onRetry?: (delayMs: number) => void,
+  ): Promise<number[][]> {
     const startedAt = performance.now();
     for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
       try {
@@ -94,6 +97,7 @@ export class EmbeddingService {
         this.logger.warn(
           `OpenAI embedding request failed (attempt ${attempt}/${MAX_RETRIES}); retrying in ${delayMs}ms.`,
         );
+        onRetry?.(delayMs);
         await sleep(delayMs);
       }
     }
@@ -117,7 +121,11 @@ export class EmbeddingService {
     return undefined;
   }
 
-  async embedBatch(texts: string[], batchSize = 10): Promise<number[][]> {
+  async embedBatch(
+    texts: string[],
+    batchSize = 10,
+    onRetry?: (delayMs: number) => void,
+  ): Promise<number[][]> {
     if (!texts.length) return [];
     if (!Number.isInteger(batchSize) || batchSize < 1) {
       throw new Error(`Invalid embedding batch size: ${batchSize}`);
@@ -126,7 +134,7 @@ export class EmbeddingService {
     const results: number[][] = [];
     for (let i = 0; i < texts.length; i += batchSize) {
       const slice = texts.slice(i, i + batchSize);
-      results.push(...(await this.embedSliceWithRetry(slice)));
+      results.push(...(await this.embedSliceWithRetry(slice, onRetry)));
     }
 
     return results;

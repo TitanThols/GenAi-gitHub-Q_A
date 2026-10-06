@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "repositories": [
+    {
+      "name": "sindresorhus/is",
+      "url": "https://github.com/sindresorhus/is",
+      "commit": "e9c026c611c1160eaad50da00be4e676b626018f",
+      "sizeClass": "small"
+    },
+    {
+      "name": "sindresorhus/ky",
+      "url": "https://github.com/sindresorhus/ky",
+      "commit": "0d59458a0a58e1c3d7c6db0ab17ed5c7cd671e47",
+      "sizeClass": "medium"
+    },
+    {
+      "name": "sindresorhus/type-fest",
+      "url": "https://github.com/sindresorhus/type-fest",
+      "commit": "e9f614f191aa039e4aefa2d41d62c2a3fd070cfd",
+      "sizeClass": "large"
+    }
+  ]
+}
