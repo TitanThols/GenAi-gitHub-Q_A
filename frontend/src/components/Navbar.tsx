@@ -1,16 +1,24 @@
+import { useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { useNavigate, Link } from 'react-router-dom';
 import type { RootState, AppDispatch } from '../store';
 import { logout } from '../store/authSlice';
+import api from '../api/axios';
 
 const Navbar = () => {
     const { user } = useSelector((state: RootState) => state.auth);
     const dispatch = useDispatch<AppDispatch>();
     const navigate = useNavigate();
+    const [logoutError, setLogoutError] = useState<string | null>(null);
 
-    const handleLogout = () => {
-        dispatch(logout());
-        navigate('/login');
+    const handleLogout = async () => {
+        try {
+            await api.post('/auth/logout');
+            dispatch(logout());
+            navigate('/login');
+        } catch {
+            setLogoutError('Could not contact the server to end your session. Please try again.');
+        }
     };
 
     return (
@@ -27,6 +35,11 @@ const Navbar = () => {
             <div className="flex-1" />
 
             <div className="flex items-center gap-3">
+                {logoutError && (
+                    <span role="alert" className="max-w-56 text-xs text-rose-300">
+                        {logoutError}
+                    </span>
+                )}
                 {user && (
                     <div className="flex items-center gap-2 bg-white/5 border border-white/8 rounded-full px-3 py-1.5">
                         <div className="w-5 h-5 rounded-full bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center">

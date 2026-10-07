@@ -97,8 +97,8 @@ export const LoginPage = () => {
         setLoading(true);
         try {
             const response = await api.post('/auth/login', { email, password });
-            const { accessToken, user, refreshToken } = response.data;
-            dispatch(setCredentials({ user, accessToken, refreshToken }));
+            const { accessToken, user } = response.data;
+            dispatch(setCredentials({ user, accessToken }));
             navigate('/dashboard');
         } catch (err: any) {
             setError(err?.response?.data?.message || 'Invalid email or password.');

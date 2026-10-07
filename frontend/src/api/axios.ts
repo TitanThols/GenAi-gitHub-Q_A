@@ -4,7 +4,6 @@ import { logout, setCredentials } from "../store/authSlice";
 
 interface TokenResponse {
     accessToken: string;
-    refreshToken: string;
     user: {
         id: string;
         email: string;
@@ -19,13 +18,14 @@ const baseURL = import.meta.env.VITE_API_URL ?? "http://localhost:3000/api";
 
 const api = axios.create({
     baseURL,
+    withCredentials: true,
     headers: {
         "Content-Type": "application/json",
     },
 });
 
 api.interceptors.request.use((config) => {
-    const token = localStorage.getItem("accessToken");
+    const token = store.getState().auth.accessToken;
     if (token) {
         config.headers.Authorization = `Bearer ${token}`;
     }
@@ -51,17 +51,15 @@ api.interceptors.response.use(
             return Promise.reject(error);
         }
 
-        const refreshToken = localStorage.getItem("refreshToken");
-        if (!refreshToken) {
-            store.dispatch(logout());
-            return Promise.reject(error);
-        }
-
         config._retry = true;
 
         try {
             refreshRequest ??= axios
-                .post<TokenResponse>(`${baseURL}/auth/refresh`, { refreshToken })
+                .post<TokenResponse>(
+                    `${baseURL}/auth/refresh`,
+                    {},
+                    { withCredentials: true },
+                )
                 .then(({ data }) => {
                     store.dispatch(setCredentials(data));
                     return data.accessToken;

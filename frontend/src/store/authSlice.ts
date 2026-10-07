@@ -9,14 +9,11 @@ export interface User {
 export interface AuthState {
     user: User | null;
     accessToken: string | null;
-    refreshToken: string | null;
     isAuthenticated: boolean;
     isLoading: boolean;
     error: string | null;
 }
 
-const storedToken = localStorage.getItem('accessToken');
-const storedRefreshToken = localStorage.getItem('refreshToken');
 const storedUser = localStorage.getItem('user');
 
 let initialUser: User | null = null;
@@ -28,10 +25,9 @@ try {
 
 const initialState: AuthState = {
     user: initialUser,
-    accessToken: storedToken,
-    refreshToken: storedRefreshToken,
-    isAuthenticated: Boolean(storedToken),
-    isLoading: false,
+    accessToken: null,
+    isAuthenticated: false,
+    isLoading: true,
     error: null,
 };
 
@@ -44,31 +40,24 @@ const authSlice = createSlice({
             action: PayloadAction<{
                 user: User;
                 accessToken: string;
-                refreshToken?: string;
             }>
         ) => {
-            const { user, accessToken, refreshToken } = action.payload;
+            const { user, accessToken } = action.payload;
             state.user = user;
             state.accessToken = accessToken;
-            if (refreshToken) {
-                state.refreshToken = refreshToken;
-                localStorage.setItem('refreshToken', refreshToken);
-            }
             state.isAuthenticated = true;
+            state.isLoading = false;
             state.error = null;
 
-            localStorage.setItem('accessToken', accessToken);
             localStorage.setItem('user', JSON.stringify(user));
         },
         logout: (state) => {
             state.user = null;
             state.accessToken = null;
-            state.refreshToken = null;
             state.isAuthenticated = false;
+            state.isLoading = false;
             state.error = null;
 
-            localStorage.removeItem('accessToken');
-            localStorage.removeItem('refreshToken');
             localStorage.removeItem('user');
         },
         setLoading: (state, action: PayloadAction<boolean>) => {

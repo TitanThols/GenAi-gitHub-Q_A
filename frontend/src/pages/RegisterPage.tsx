@@ -105,8 +105,8 @@ export const RegisterPage = () => {
         setLoading(true);
         try {
             const response = await api.post('/auth/register', { email, password });
-            const { accessToken, user, refreshToken } = response.data;
-            dispatch(setCredentials({ user, accessToken, refreshToken }));
+            const { accessToken, user } = response.data;
+            dispatch(setCredentials({ user, accessToken }));
             navigate('/dashboard');
         } catch (err: any) {
             setError(err?.response?.data?.message || 'Registration failed. Please try again.');

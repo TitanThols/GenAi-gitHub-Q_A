@@ -8,7 +8,7 @@ Repository records and ownership are stored in PostgreSQL. Source-code chunks an
 
 Logging out removes the browser's saved authentication tokens and clears the current in-memory repository and chat state; it does not delete repository records or Qdrant points. Logging back in to the owning account makes its repositories available again. Repository listing, detail, deletion, and question requests are authenticated and scoped to the repository owner. Deleting a repository removes its Qdrant points before removing its PostgreSQL record; if vector deletion fails, the API reports the failure and retains the repository record.
 
-The frontend stores access and refresh tokens in browser local storage. When an API request receives an expired-access-token response, it refreshes the tokens and retries that request. If the refresh token is expired or rejected, the browser clears the local session and requires a new login.
+The frontend keeps the short-lived access token in memory and uses a `Secure`, `HttpOnly` refresh cookie (secure in production, `SameSite=None` in production). The refresh cookie is not readable by JavaScript; refresh and logout requests are accepted only from an origin listed in `ALLOWED_ORIGINS`. On reload, the app exchanges the cookie for a fresh in-memory access token. If the refresh cookie expires or is rejected, the browser clears the local user state and requires a new login. For reliable browser cookie behavior, use the frontend and API on the same site (for example, `app.example.com` and `api.example.com`) and verify cookie support with the target browsers; unrelated provider domains may be treated as third-party cookies.
 
 ## Measured results
 
