@@ -86,3 +86,71 @@ The evaluation, ablation, and indexing benchmark make OpenAI API calls and may i
 - The ablation measures retrieval Recall@5 only. It does not compare answer quality, latency, or indexing cost between chunking methods.
 - The indexing benchmark covers three pinned TypeScript-oriented repositories under the runner's supported-extension and file-size rules. It is a single run; the observed absence of retries does not predict rate limiting on other runs.
 - These committed outputs are reproducible records of specific runs, not guarantees that future runs will return identical latency or retrieval results.
+
+## Deployment
+
+The application needs a static frontend host, a Node.js backend host that can run the NestJS API and BullMQ worker, PostgreSQL for users/repository metadata, Redis for BullMQ, Qdrant for vectors, and an OpenAI API key. Qdrant Cloud and managed Redis/PostgreSQL providers can be used; keep all data services private or restrict their network/API-key access to the backend.
+
+### 1. Provision the data services
+
+- Create a PostgreSQL database and copy its TLS-enabled connection URL as `DATABASE_URL`.
+- Create a Redis instance with BullMQ-compatible persistence and copy its connection URL as `REDIS_URL`. Use the provider's `rediss://` URL when TLS is required.
+- Create a Qdrant Cloud cluster. Copy its HTTPS cluster URL to `QDRANT_URL` and its cluster API key to `QDRANT_API_KEY`.
+- Create an OpenAI API key for embeddings and chat completions.
+
+### 2. Deploy the backend API and worker
+
+Deploy the `backend` directory as a Node.js service. Configure the build command as:
+
+```bash
+npm ci && npm run build
+```
+
+Configure the start command as:
+
+```bash
+npm run start:prod
+```
+
+The service binds to `PORT` (default `3000`) and serves the API below `/api`. Set the environment variables below in the backend host's secret/environment settings, not in source control:
+
+| Variable | Required | Value |
+|---|---|---|
+| `NODE_ENV` | Yes | `production` |
+| `PORT` | Host-dependent | Use the port provided by the host; defaults to `3000` |
+| `DATABASE_URL` | Yes | Managed PostgreSQL connection URL; include provider-required TLS options |
+| `REDIS_URL` | Yes | Managed Redis connection URL; use `rediss://` when required |
+| `QDRANT_URL` | Yes | Qdrant Cloud HTTPS cluster URL |
+| `QDRANT_API_KEY` | Yes for secured Qdrant Cloud | Qdrant cluster API key |
+| `OPENAI_API_KEY` | Yes | OpenAI API key |
+| `JWT_ACCESS_SECRET` | Yes | Long, random, private secret |
+| `JWT_REFRESH_SECRET` | Yes | A separate long, random, private secret |
+| `ALLOWED_ORIGINS` | Yes | Comma-separated exact frontend origins, without a trailing slash |
+
+Do not set `NODE_ENV=production` until the PostgreSQL tables for the TypeORM entities have been created: production disables TypeORM schema synchronization. This repository does not yet include a migration command or checked-in initial migration, so database schema provisioning is currently a manual deployment prerequisite. Do not use TypeORM `synchronize` against production data.
+
+The API process also runs the BullMQ consumer in the same NestJS application, so queue processing works while this single service is running. Do not deploy a separate worker unless you intentionally configure it to run this same application and share the same environment.
+
+### 3. Deploy the frontend
+
+Deploy the `frontend` directory as a static Vite site. Set `VITE_API_URL` at build time to the deployed backend URL ending in `/api`, for example `https://api.example.com/api`; see [frontend/.env.example](./frontend/.env.example). The Vite value is embedded into the public browser bundle, so it must contain only the API URL, never credentials.
+
+Build command:
+
+```bash
+npm ci && npm run build
+```
+
+Publish directory: `dist`.
+
+Configure the static host to rewrite application routes (such as `/dashboard`, `/repos/...`, and `/chat/...`) to `index.html`, while still serving existing static assets normally. Add the final HTTPS frontend origin to backend `ALLOWED_ORIGINS`, then redeploy/restart the backend after changing that setting.
+
+### 4. Verify deployment
+
+- Open the frontend over HTTPS, register or log in, and check that the dashboard loads.
+- Add a public GitHub repository and confirm the status progresses to indexed; inspect backend logs for BullMQ, OpenAI, and Qdrant failures if it stalls.
+- Open chat, ask a question, and test that a source citation loads the indexed chunk and its GitHub line link.
+- Confirm a second account cannot read, query, or delete the first account's repository.
+- Keep secrets in the service providers' secret stores. Never put OpenAI, Qdrant, database, Redis, or JWT secrets into `VITE_*` variables or commit a `.env` file.
+
+The optional `EVAL_EMAIL`, `EVAL_PASSWORD`, `REPO_ID`, and `INDEXED_COMMIT` values in [backend/.env.example](./backend/.env.example) are only for local evaluation scripts; they are not needed by the deployed app.

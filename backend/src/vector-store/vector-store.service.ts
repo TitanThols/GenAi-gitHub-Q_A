@@ -29,8 +29,10 @@ export class VectorStoreService implements OnModuleInit {
 
     constructor(private readonly configService: ConfigService) {
         const url = this.configService.get<string>('QDRANT_URL') || 'http://localhost:6333';
+        const apiKey = this.configService.get<string>('QDRANT_API_KEY');
         this.client = new QdrantClient({
             url,
+            ...(apiKey ? { apiKey } : {}),
             checkCompatibility: false,
         });
     }
