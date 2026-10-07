@@ -103,8 +103,10 @@ The application needs a static frontend host, a Node.js backend host that can ru
 Deploy the `backend` directory as a Node.js service. Configure the build command as:
 
 ```bash
-npm ci && npm run build
+npm ci --include=dev && npm run build
 ```
+
+Include development dependencies during the build because the Nest CLI used by `npm run build` is a development dependency. The production start command runs compiled JavaScript and does not need the Nest CLI.
 
 If your host supports a release/pre-deploy command, set it to apply pending PostgreSQL migrations:
 
