@@ -14,6 +14,7 @@
     "start:dev": "nest start --watch",
     "start:debug": "nest start --debug --watch",
     "start:prod": "node dist/main",
+    "start:prod:migrate": "npm run migration:run && npm run start:prod",
     "eval": "node ../eval/run-eval.mjs",
     "eval:validate": "node ../eval/run-eval.mjs --validate",
     "eval:ablation": "node ../eval/run-ablation.mjs",

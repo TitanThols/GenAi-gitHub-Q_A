@@ -106,17 +106,19 @@ Deploy the `backend` directory as a Node.js service. Configure the build command
 npm ci && npm run build
 ```
 
-Configure the release/pre-deploy command to apply pending PostgreSQL migrations:
+If your host supports a release/pre-deploy command, set it to apply pending PostgreSQL migrations:
 
 ```bash
 npm run migration:run
 ```
 
-Configure the start command as:
+If your host does **not** support a separate release command, configure the start command as:
 
 ```bash
-npm run start:prod
+npm run start:prod:migrate
 ```
+
+This startup option runs pending migrations before starting NestJS. It is intended for a single backend instance; do not let multiple replicas run migrations concurrently. For a scaled deployment, run `npm run migration:run` once as a release or one-off command, then start all replicas with `npm run start:prod`.
 
 The service binds to `PORT` (default `3000`) and serves the API below `/api`. Set the environment variables below in the backend host's secret/environment settings, not in source control:
 
@@ -133,7 +135,7 @@ The service binds to `PORT` (default `3000`) and serves the API below `/api`. Se
 | `JWT_REFRESH_SECRET` | Yes | A separate long, random, private secret |
 | `ALLOWED_ORIGINS` | Yes | Comma-separated exact frontend origins, without a trailing slash |
 
-The migration command runs the checked-in initial schema migration from compiled `dist/migrations` code; run the build step before the release command. It creates missing application tables and adds the current repository columns to an existing repository table when they are absent. It does not import or transform old records. Back up an existing database before applying migrations, and inspect the target schema first if it has drifted from the TypeORM entities. The migration is deliberately irreversible to prevent an accidental rollback from deleting user/repository data. Production keeps TypeORM `synchronize` disabled.
+The migration command runs the checked-in initial schema migration from compiled `dist/migrations` code; the deployment build must complete before running it. It creates missing application tables and adds the current repository columns to an existing repository table when they are absent. It does not import or transform old records. Back up an existing database before applying migrations, and inspect the target schema first if it has drifted from the TypeORM entities. The migration is deliberately irreversible to prevent an accidental rollback from deleting user/repository data. Production keeps TypeORM `synchronize` disabled.
 
 The API process also runs the BullMQ consumer in the same NestJS application, so queue processing works while this single service is running. Do not deploy a separate worker unless you intentionally configure it to run this same application and share the same environment.
 
