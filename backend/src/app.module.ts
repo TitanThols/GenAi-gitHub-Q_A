@@ -27,6 +27,8 @@ import { AgentModule } from './agent/agent.module';
         type: 'postgres',
         url: config.getOrThrow<string>('DATABASE_URL'),
         entities: [__dirname + '/**/*.entity{.ts,.js}'],
+        migrations: [__dirname + '/migrations/*.js'],
+        migrationsRun: false,
         synchronize: config.get<string>('NODE_ENV') !== 'production',
         logging: config.get<string>('NODE_ENV') === 'development',
       }),

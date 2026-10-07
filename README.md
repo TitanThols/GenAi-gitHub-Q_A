@@ -93,7 +93,7 @@ The application needs a static frontend host, a Node.js backend host that can ru
 
 ### 1. Provision the data services
 
-- Create a PostgreSQL database and copy its TLS-enabled connection URL as `DATABASE_URL`.
+- Create a PostgreSQL 13+ database and copy its TLS-enabled connection URL as `DATABASE_URL`.
 - Create a Redis instance with BullMQ-compatible persistence and copy its connection URL as `REDIS_URL`. Use the provider's `rediss://` URL when TLS is required.
 - Create a Qdrant Cloud cluster. Copy its HTTPS cluster URL to `QDRANT_URL` and its cluster API key to `QDRANT_API_KEY`.
 - Create an OpenAI API key for embeddings and chat completions.
@@ -104,6 +104,12 @@ Deploy the `backend` directory as a Node.js service. Configure the build command
 
 ```bash
 npm ci && npm run build
+```
+
+Configure the release/pre-deploy command to apply pending PostgreSQL migrations:
+
+```bash
+npm run migration:run
 ```
 
 Configure the start command as:
@@ -127,7 +133,7 @@ The service binds to `PORT` (default `3000`) and serves the API below `/api`. Se
 | `JWT_REFRESH_SECRET` | Yes | A separate long, random, private secret |
 | `ALLOWED_ORIGINS` | Yes | Comma-separated exact frontend origins, without a trailing slash |
 
-Do not set `NODE_ENV=production` until the PostgreSQL tables for the TypeORM entities have been created: production disables TypeORM schema synchronization. This repository does not yet include a migration command or checked-in initial migration, so database schema provisioning is currently a manual deployment prerequisite. Do not use TypeORM `synchronize` against production data.
+The migration command runs the checked-in initial schema migration from compiled `dist/migrations` code; run the build step before the release command. It creates missing application tables and adds the current repository columns to an existing repository table when they are absent. It does not import or transform old records. Back up an existing database before applying migrations, and inspect the target schema first if it has drifted from the TypeORM entities. The migration is deliberately irreversible to prevent an accidental rollback from deleting user/repository data. Production keeps TypeORM `synchronize` disabled.
 
 The API process also runs the BullMQ consumer in the same NestJS application, so queue processing works while this single service is running. Do not deploy a separate worker unless you intentionally configure it to run this same application and share the same environment.
 
