@@ -58,22 +58,48 @@ export class ReposService {
 
         const savedRepo = await this.repoRepository.save(repo);
 
-        await this.ingestionQueue.add(
-            'index-repo',
-            {
-                repoId: savedRepo.id,
-                url: savedRepo.url,
-            },
-            {
-                attempts: 2,
-                backoff: {
-                    type: 'exponential',
-                    delay: 5000,
-                },
-            },
-        );
+        try {
+            await Promise.race([
+                this.ingestionQueue.add(
+                    'index-repo',
+                    {
+                        repoId: savedRepo.id,
+                        url: savedRepo.url,
+                    },
+                    {
+                        attempts: 2,
+                        backoff: {
+                            type: 'exponential',
+                            delay: 5000,
+                        },
+                    },
+                ),
+                new Promise((_, reject) =>
+                    setTimeout(
+                        () =>
+                            reject(
+                                new Error(
+                                    'Redis connection timeout (15s): unable to reach the job queue. Please check your REDIS_URL configuration.',
+                                ),
+                            ),
+                        15000,
+                    ),
+                ),
+            ]);
+            this.logger.log(`Enqueued ingestion job for repo ${savedRepo.id} (${savedRepo.name})`);
+        } catch (queueErr: any) {
+            this.logger.error(
+                `Failed to enqueue ingestion job for repo ${savedRepo.id}: ${queueErr.message}`,
+            );
+            await this.repoRepository.update(savedRepo.id, {
+                status: RepoStatus.FAILED,
+                errorMessage: `Queue error: ${queueErr.message}`,
+            });
+            throw new BadRequestException(
+                `Repository saved, but failed to start indexing: ${queueErr.message}`,
+            );
+        }
 
-        this.logger.log(`Enqueued ingestion job for repo ${savedRepo.id} (${savedRepo.name})`);
         return savedRepo;
     }
 

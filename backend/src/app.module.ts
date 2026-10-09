@@ -37,11 +37,17 @@ import { AgentModule } from './agent/agent.module';
 
     BullModule.forRootAsync({
       imports: [ConfigModule],
-      useFactory: (config: ConfigService) => ({
-        connection: {
-          url: config.getOrThrow<string>('REDIS_URL'),
-        },
-      }),
+      useFactory: (config: ConfigService) => {
+        const redisUrl = config.getOrThrow<string>('REDIS_URL');
+        const isTls = redisUrl.startsWith('rediss://');
+        return {
+          connection: {
+            url: redisUrl,
+            maxRetriesPerRequest: null,
+            ...(isTls ? { tls: { rejectUnauthorized: false } } : {}),
+          },
+        };
+      },
       inject: [ConfigService],
     }),
 
