@@ -54,6 +54,17 @@ export class VectorStoreService implements OnModuleInit {
                 });
                 this.logger.log(`Collection '${this.collectionName}' created successfully.`);
             }
+
+            // Ensure payload indexes exist for filtered fields (mandatory in Qdrant Cloud strict mode)
+            await this.client.createPayloadIndex(this.collectionName, {
+                field_name: 'repoId',
+                field_schema: 'keyword',
+            }).catch(() => {});
+
+            await this.client.createPayloadIndex(this.collectionName, {
+                field_name: 'filePath',
+                field_schema: 'keyword',
+            }).catch(() => {});
         } catch (error) {
             this.logger.warn(
                 `Failed to verify or create collection '${this.collectionName}'. Is Qdrant running?`,
