@@ -38,7 +38,12 @@ import { AgentModule } from './agent/agent.module';
     BullModule.forRootAsync({
       imports: [ConfigModule],
       useFactory: (config: ConfigService) => {
-        const redisUrl = config.getOrThrow<string>('REDIS_URL');
+        let redisUrl = config.getOrThrow<string>('REDIS_URL').trim();
+        // Automatically sanitize if command line flags like 'redis-cli -u' were accidentally included
+        const matches = redisUrl.match(/(rediss?:\/\/[a-zA-Z0-9_\-.:@]+)/g);
+        if (matches && matches.length > 0) {
+          redisUrl = matches[matches.length - 1];
+        }
         const isTls = redisUrl.startsWith('rediss://');
         return {
           connection: {
